@@ -1,0 +1,4805 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipment Record</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy: #16243B;
+    --navy-light: #233655;
+    --accent: #FF7A3C;
+    --accent-soft: #FFE7DA;
+    --bg: #F3F5F8;
+    --card: #FFFFFF;
+    --text: #1F2937;
+    --muted: #8A93A3;
+    --border: #E3E7EE;
+    --good: #2F9E64;
+    --danger: #E0584A;
+    --radius: 14px;
+    --display: 'Space Grotesk', 'Noto Sans Thai', sans-serif;
+    --body: 'Noto Sans Thai', 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', 'Noto Sans Thai', monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family: var(--body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background: var(--navy);
+    color: #fff;
+    padding: 22px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 18px);
+  }
+  .brand{
+    display:flex; align-items:center; gap:14px;
+  }
+  .brand-mark{
+    width:42px; height:42px; border-radius:10px;
+    background: var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--display); font-weight:700; font-size:18px;
+    color: var(--navy);
+    flex-shrink:0;
+    box-shadow: 0 4px 14px rgba(255,122,60,0.35);
+  }
+  .brand h1{
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight:600;
+    margin:0;
+    letter-spacing: 0.2px;
+  }
+  .brand p{
+    margin:2px 0 0;
+    font-size: 12.5px;
+    color: #A9B4C9;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+  }
+  .topbar-actions{
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family: var(--body);
+    font-size: 13.5px;
+    font-weight:600;
+    border:none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+    white-space: nowrap;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; pointer-events:none; }
+  .btn-accent{ background: var(--accent); color: #fff; }
+  .btn-accent:hover{ box-shadow: 0 4px 14px rgba(255,122,60,0.4); }
+  .btn-outline{
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+    border:1px solid rgba(255,255,255,0.18);
+  }
+  .btn-outline:hover{ background: rgba(255,255,255,0.13); }
+  .btn-ghost{
+    background: transparent;
+    color: var(--muted);
+    border:1px solid var(--border);
+  }
+  .btn-ghost:hover{ background: #fff; color: var(--text); }
+  .btn-sm{ padding: 7px 12px; font-size:12.5px; border-radius:8px; }
+  .btn-danger-ghost{
+    background:transparent; color: var(--danger); border:1px solid #F3D5D1;
+  }
+  .btn-danger-ghost:hover{ background:#FBEAE7; }
+
+  /* ---------- Layout ---------- */
+  .layout{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 26px 24px 60px;
+  }
+
+  /* ---------- Customer tabs (manifest stubs) ---------- */
+  .tabs-row{
+    display:flex;
+    flex-wrap: wrap;
+    gap:10px;
+    padding: 4px 4px 14px;
+    margin-bottom: 4px;
+  }
+
+  .tab{
+    position:relative;
+    flex: 1 1 calc((100% - 50px) / 6);
+    max-width: calc((100% - 50px) / 6);
+    min-width: 120px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 4px 4px;
+    padding: 11px 14px 11px 16px;
+    cursor:pointer;
+    font-family: var(--display);
+    font-weight:600;
+    font-size: 13.5px;
+    color: var(--muted);
+    transition: all .15s ease;
+    min-width: 120px;
+    border-bottom: 3px solid transparent;
+  }
+  .tab:hover{ color: var(--text); }
+  .tab.active{
+    color: var(--navy);
+    border-bottom: 3px solid var(--accent);
+    box-shadow: 0 2px 10px rgba(22,36,59,0.06);
+  }
+  .tab .tab-count{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 1px 6px;
+  }
+  .tab.active .tab-count{ background: var(--accent-soft); color:var(--accent); }
+  .tab .tab-close{
+    color: var(--muted);
+    font-size: 15px;
+    line-height:1;
+    padding: 2px;
+    border-radius:5px;
+  }
+  .tab .tab-close:hover{ color: var(--danger); background:#FBEAE7; }
+  .tab-input{
+    font-family: var(--display);
+    font-weight:600;
+    font-size: 13.5px;
+    border:none;
+    outline:none;
+    background:transparent;
+    width: 90px;
+    color: var(--navy);
+  }
+  .tab.tab-drag-over{
+    border-bottom: 3px solid var(--accent) !important;
+    background: var(--accent-soft);
+  }
+  .tab-add{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width: 42px;
+    border-radius: 12px;
+    border: 1px dashed #C7CEDA;
+    background:transparent;
+    color: var(--muted);
+    font-size: 20px;
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .tab-add:hover{ border-color: var(--accent); color: var(--accent); background:#fff; }
+
+  /* ---------- Tab edit (rename) button ---------- */
+  .tab .tab-edit{
+    color: var(--muted);
+    font-size: 13px;
+    line-height:1;
+    padding: 3px;
+    border-radius:5px;
+    display:flex;
+    align-items:center;
+  }
+  .tab .tab-edit:hover{ color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------- Alert banner ---------- */
+  .alert-banner{
+    border-radius: var(--radius);
+    border: 1px solid #FBE7AE;
+    background: #FFF9EC;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+  }
+  .alert-banner.has-overdue{
+    border-color: #F3D5D1;
+    background: #FFF3F1;
+  }
+  .alert-banner-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family: var(--display);
+    font-weight:600;
+    font-size: 13.5px;
+    color: #9A6B00;
+    margin-bottom: 8px;
+  }
+  .alert-banner.has-overdue .alert-banner-head{ color: var(--danger); }
+  .alert-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .alert-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid #FBE7AE;
+    border-radius: 9px;
+    padding: 9px 12px;
+    flex-wrap: wrap;
+  }
+  .alert-item.overdue{ border-color: #F3D5D1; }
+  .alert-item .alert-badge{
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight:600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #FFF4D6;
+    color: #9A6B00;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .alert-item.overdue .alert-badge{ background:#FBEAE7; color: var(--danger); }
+  .alert-item .alert-cust{
+    font-family: var(--display);
+    font-weight:600;
+    color: var(--navy);
+  }
+  .alert-item .alert-meta{
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .alert-item .alert-link{
+    margin-left:auto;
+    color: var(--accent);
+    font-weight:600;
+    font-size: 12.5px;
+    cursor:pointer;
+    background:none; border:none;
+    flex-shrink:0;
+  }
+  .alert-item .alert-link:hover{ text-decoration: underline; }
+
+  /* ---------- Card / Table ---------- */
+  .card{
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow:hidden;
+  }
+  .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .card-head h2{
+    font-family: var(--display);
+    font-size: 16px;
+    margin:0;
+    color: var(--navy);
+  }
+  .card-head .sub{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top:2px;
+  }
+  .card-head-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  table{
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+  thead th{
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight:500;
+    padding: 10px 12px;
+    background: #FAFBFD;
+    border-bottom: 1px solid var(--border);
+    white-space:nowrap;
+  }
+  thead th.col-no{ width: 48px; white-space:nowrap; }
+  thead th.col-action{ width: 52px; text-align:center; white-space:nowrap; }
+  thead th:not(.col-no):not(.col-action){
+    white-space: nowrap;
+  }
+
+  /* Inputs auto-size to content — no fixed min-width on td */
+  tbody td:not(.idx):not(.action-cell){
+    white-space: nowrap;
+  }
+  td input{
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 7px 8px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color .12s ease, background .12s ease;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+  td input[type="text"]{
+    /* width set via inline style in JS using ch units */
+    min-width: 4ch;
+  }
+  td input[type="date"]{
+    width: 138px;
+  }
+
+  /* ---------- Excel-style column dropdown filter ---------- */
+  .col-head-wrap{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    cursor: default;
+  }
+  .col-filter-btn{
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items:center; justify-content:center;
+    font-size: 10px;
+    padding: 0;
+    transition: all .12s;
+  }
+  .col-filter-btn:hover, .col-filter-btn.active{
+    background: var(--accent-soft); color: var(--accent); border-color: var(--accent);
+  }
+  .col-filter-btn.active{ background: var(--accent); color:#fff; }
+
+  /* Dropdown panel */
+  .col-dropdown{
+    position: fixed;
+    z-index: 999;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 28px rgba(22,36,59,.14);
+    min-width: 210px;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: dropIn .12s ease;
+  }
+  @keyframes dropIn{ from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+  .col-dropdown-head{
+    padding: 10px 12px 6px;
+    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .col-dropdown-search{
+    width:100%; padding: 6px 10px;
+    border: 1px solid var(--border); border-radius:7px;
+    font-size:12.5px; font-family:var(--mono);
+    outline:none; box-sizing:border-box;
+  }
+  .col-dropdown-search:focus{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+  .col-dropdown-actions{
+    display:flex; gap:6px; font-size:11.5px;
+  }
+  .col-dropdown-action{
+    background:none; border:none; cursor:pointer;
+    color:var(--accent); font-weight:600; font-size:11.5px; padding:2px 4px;
+  }
+  .col-dropdown-list{
+    overflow-y: auto;
+    flex: 1;
+    padding: 6px 0;
+  }
+  .col-dropdown-item{
+    display:flex; align-items:center; gap:8px;
+    padding: 6px 14px;
+    cursor:pointer; font-size:13px;
+    transition: background .08s;
+  }
+  .col-dropdown-item:hover{ background:#F5F7FA; }
+  .col-dropdown-item input[type=checkbox]{
+    accent-color:var(--accent); width:14px; height:14px; flex-shrink:0; cursor:pointer;
+  }
+  .col-dropdown-item .item-label{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .col-dropdown-item .item-count{
+    font-family:var(--mono); font-size:10.5px; color:var(--muted);
+    background:var(--bg); border-radius:4px; padding:1px 5px; flex-shrink:0;
+  }
+  .col-dropdown-foot{
+    padding:8px 12px;
+    border-top:1px solid var(--border);
+    display:flex; gap:6px; justify-content:flex-end;
+  }
+
+  /* Highlight active filtered column header */
+  thead th.col-filtered{ background:#FFF4EE; }
+  thead th.col-filtered .col-filter-btn{ background: var(--accent); color:#fff; border-color:var(--accent); }
+
+  /* ---------- Alert row highlight ---------- */
+  @keyframes rowFlash{
+    0%{ box-shadow: inset 0 0 0 2px var(--accent); }
+    60%{ box-shadow: inset 0 0 0 2px var(--accent); }
+    100%{ box-shadow: none; }
+  }
+  tbody tr.alert-highlight td{ animation: rowFlash 2s ease forwards; }
+
+  /* ---------- Plan-date cell + day-summary trigger button ---------- */
+  td[data-col="planDate"]{
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  td[data-col="planDate"] input[type="date"]{
+    cursor: pointer;
+  }
+  .plan-date-summary-btn{
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    opacity: .45;
+    cursor: pointer;
+    padding: 2px 3px;
+    border-radius: 5px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: opacity .12s, background .12s;
+  }
+  .plan-date-summary-btn:hover{
+    opacity: 1;
+    background: var(--accent-soft);
+  }
+
+  /* ---------- Day Summary popup ---------- */
+  .day-summary-popup{
+    position: fixed;
+    z-index: 1100;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(22,36,59,.18);
+    width: 340px;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .day-popup-head{
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 16px 12px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .day-popup-head h4{
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+  }
+  .day-popup-head p{
+    font-size: 11px;
+    color: #A9B4C9;
+    margin: 3px 0 0;
+    font-family: var(--mono);
+  }
+  .day-popup-close{
+    background: rgba(255,255,255,.1);
+    border: none;
+    color: #fff;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .day-popup-close:hover{ background: rgba(255,255,255,.22); }
+  .day-popup-body{
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .day-popup-total{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .day-popup-total strong{
+    font-size: 15px;
+    color: var(--navy);
+    font-family: var(--display);
+  }
+  .day-popup-row{
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #FAFBFD;
+  }
+  .day-popup-row:hover{ background: #F0F4F8; }
+  .day-popup-dot{
+    width: 8px; height: 8px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .day-popup-info{ flex: 1; min-width: 0; }
+  .day-popup-pn{
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .day-popup-meta{
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .day-popup-qty{
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .day-popup-status{
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 5px;
+    margin-top: 3px;
+    display: inline-block;
+  }
+  .day-popup-status.shipped{ background: #E3F6EB; color: #1E7A46; }
+  .day-popup-status.pending{ background: #FFF4D6; color: #9A6B00; }
+
+  /* ---------- Filter row (kept for clear button only) ---------- */
+  tr.filter-row{ display:none; }  /* hidden — replaced by column dropdowns */
+
+  /* ---------- Trash history panel ---------- */
+  .trash-panel{
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 380px;
+    background: #fff;
+    box-shadow: -4px 0 24px rgba(22,36,59,.14);
+    z-index: 900;
+    display: flex; flex-direction:column;
+    transform: translateX(100%);
+    transition: transform .25s ease;
+  }
+  .trash-panel.open{ transform: translateX(0); }
+  .trash-panel-head{
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .trash-panel-head h3{
+    font-family:var(--display); font-size:16px; margin:0; color:var(--navy);
+  }
+  .trash-close{
+    background:none; border:none; cursor:pointer; color:var(--muted); font-size:20px; padding:2px;
+    border-radius:6px;
+  }
+  .trash-close:hover{ color:var(--danger); background:#FBEAE7; }
+  .trash-list{ flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:10px; }
+  .trash-item{
+    border:1px solid var(--border); border-radius:10px;
+    padding:12px 14px; background:#FAFBFD;
+  }
+  .trash-item-head{
+    display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px;
+  }
+  .trash-item-name{
+    font-family:var(--display); font-weight:600; font-size:14px; color:var(--navy);
+  }
+  .trash-item-meta{
+    font-family:var(--mono); font-size:11px; color:var(--muted); margin-bottom:6px;
+  }
+  .trash-empty{ text-align:center; color:var(--muted); padding:40px 0; font-size:14px; }
+  .trash-overlay{
+    display:none; position:fixed; inset:0; background:rgba(22,36,59,.18); z-index:899;
+  }
+  .trash-overlay.open{ display:block; }
+
+  /* ---------- Archive panel ---------- */
+  .archive-panel{
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 520px;
+    background: #fff;
+    box-shadow: -4px 0 24px rgba(22,36,59,.14);
+    z-index: 900;
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s ease;
+  }
+  .archive-panel.open{ transform: translateX(0); }
+  .archive-controls{
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #FAFBFD;
+  }
+  .archive-controls select, .archive-controls input{
+    font-size: 12.5px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--body);
+    background: #fff;
+    color: var(--text);
+    outline: none;
+  }
+  .archive-controls select:focus, .archive-controls input:focus{
+    border-color: var(--accent);
+  }
+  .archive-stat{
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .archive-item{
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #FAFBFD;
+  }
+  .archive-item-head{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .archive-item-pn{
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy);
+  }
+  .archive-item-meta{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .archive-item-meta span::before{ content: '· '; }
+  .archive-item-meta span:first-child::before{ content: ''; }
+  .archive-restore{
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--body);
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid #FFD3BC;
+    border-radius: 7px;
+    padding: 4px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .12s ease;
+  }
+  .archive-restore:hover{ background: var(--accent); color: #fff; }
+  .archive-empty{ text-align:center; color:var(--muted); padding:50px 0; font-size:14px; }
+  tbody td{
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background: #FAFBFD; }
+
+  /* Part-group row colors */
+  tbody tr.part-color-0 td { background: #FFFBF0; }
+  tbody tr.part-color-1 td { background: #F0F8FF; }
+  tbody tr.part-color-2 td { background: #F3F0FF; }
+  tbody tr.part-color-3 td { background: #F0FFF5; }
+  tbody tr.part-color-4 td { background: #FFF0F5; }
+  tbody tr.part-color-5 td { background: #F0FAFA; }
+  tbody tr.part-color-6 td { background: #FFFAF0; }
+  tbody tr.part-color-7 td { background: #F5F0FF; }
+  tbody tr.part-color-0:hover td { background: #FFF5D6; }
+  tbody tr.part-color-1:hover td { background: #DEEEFF; }
+  tbody tr.part-color-2:hover td { background: #E8E3FF; }
+  tbody tr.part-color-3:hover td { background: #DAFBE8; }
+  tbody tr.part-color-4:hover td { background: #FFE0EC; }
+  tbody tr.part-color-5:hover td { background: #DAFAFF; }
+  tbody tr.part-color-6:hover td { background: #FFEDD6; }
+  tbody tr.part-color-7:hover td { background: #EBE3FF; }
+
+  /* Part cell color chip */
+  .part-chip{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .part-chip::before{
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .part-color-dot-0::before { background: #F5A623; }
+  .part-color-dot-1::before { background: #3A8FE0; }
+  .part-color-dot-2::before { background: #7B5CF0; }
+  .part-color-dot-3::before { background: #2DBF6A; }
+  .part-color-dot-4::before { background: #E0437A; }
+  .part-color-dot-5::before { background: #20B2C4; }
+  .part-color-dot-6::before { background: #E07A20; }
+  .part-color-dot-7::before { background: #9B4CF0; }
+  td.idx{
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--muted);
+    text-align:center;
+    padding-left:16px;
+  }
+  td input::placeholder{ color: #C4CADA; font-family: var(--body); }
+  td input:focus{
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  td input[type="date"]{ color: var(--text); }
+
+  /* ---------- Status select ---------- */
+  td select.status-select{
+    min-width: 130px;
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight:600;
+    color: var(--muted);
+    outline:none;
+    cursor:pointer;
+    appearance:none;
+    -webkit-appearance:none;
+    transition: border-color .12s ease, background .12s ease;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%238A93A3' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+  }
+  td select.status-select:focus{
+    border-color: var(--accent);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  td select.status-select option{ color: var(--text); font-weight:500; }
+
+  td select.status-select.status-empty{ color: var(--muted); background-color: transparent; }
+  td select.status-select.status-shipped{
+    color: #1E7A46; background-color: #E3F6EB; border-color: #CDEEDB;
+  }
+  td select.status-select.status-pending{
+    color: #9A6B00; background-color: #FFF4D6; border-color: #FBE7AE;
+  }
+
+  td.action-cell{ text-align:center; padding-right:16px; }
+  .row-delete{
+    width: 30px; height:30px;
+    border-radius: 8px;
+    border:1px solid var(--border);
+    background:#fff;
+    color: var(--muted);
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 15px;
+    transition: all .12s ease;
+  }
+  .row-delete:hover{ background:#FBEAE7; color:var(--danger); border-color:#F3D5D1; }
+  .row-duplicate{
+    width: 30px; height:30px;
+    border-radius: 8px;
+    border:1px solid var(--border);
+    background:#fff;
+    color: var(--muted);
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 14px;
+    transition: all .12s ease;
+  }
+  .row-duplicate:hover{ background:#E3F1FB; color:#1B6FAE; border-color:#C7DFFB; }
+
+  .card-foot{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .empty{
+    padding: 50px 20px;
+    text-align:center;
+    color: var(--muted);
+  }
+  .empty .big{
+    font-family: var(--display);
+    font-size: 15px;
+    color: var(--navy);
+    margin-bottom:6px;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast-placeholder{ display:none; }
+
+  /* ---------- Import modal ---------- */
+  .modal-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(22,36,59,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+    backdrop-filter: blur(2px);
+  }
+  .modal{
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(22,36,59,0.25);
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-head{
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .modal-icon{
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .modal-head h3{
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0 0 3px;
+  }
+  .modal-head p{
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0;
+  }
+  .modal-body{
+    padding: 16px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .import-sheet-row{
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .import-sheet-row.is-existing{ border-color: #C7DFFB; background: #F0F8FF; }
+  .import-sheet-row.is-unchecked{ opacity: 0.45; background: #FAFBFD; border-color: var(--border); }
+  .import-sheet-checkbox{
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* New import form fields */
+  .import-field-group{ display:flex; flex-direction:column; gap:8px; }
+  .import-field-label{
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .import-field-select, .import-field-input{
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-family: var(--body);
+    font-size: 13.5px;
+    color: var(--text);
+    background: #FAFBFD;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  .import-field-select:focus, .import-field-input:focus{
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .import-preview{
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    padding: 6px 10px;
+    background: var(--bg);
+    border-radius: 7px;
+  }
+  .import-cust-tabs{
+    display: flex;
+    gap: 6px;
+  }
+  .import-cust-tab{
+    flex: 1;
+    padding: 8px 12px;
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .12s ease;
+  }
+  .import-cust-tab.active{
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+  .import-mode-row{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .import-info-box{
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    line-height: 1.5;
+  }
+  .import-info-box.info-add{
+    background: #E3F6EB;
+    color: #1E7A46;
+    border: 1px solid #CDEEDB;
+  }
+  .import-info-box.info-replace{
+    background: #FFF3F1;
+    color: var(--danger);
+    border: 1px solid #F3D5D1;
+  }
+
+  /* ---------- Part Catalogue ---------- */
+  .catalogue-shell{
+    max-width: 1100px; margin: 0 auto;
+    background: #fff; border-radius: 18px;
+    overflow: hidden; box-shadow: 0 16px 48px rgba(22,36,59,.22);
+  }
+  .catalogue-head{
+    background: var(--navy);
+    background-image: repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 18px);
+    padding: 22px 28px 18px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .catalogue-head h2{ font-family:var(--display); font-size:18px; color:#fff; margin:0; }
+  .catalogue-head p{ color:#A9B4C9; font-size:12.5px; margin:4px 0 0; font-family:var(--mono); }
+  .catalogue-controls{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    padding:14px 22px; border-bottom:1px solid var(--border); background:#FAFBFD;
+  }
+  .catalogue-search{
+    flex:1; min-width:180px; padding:8px 14px;
+    border:1px solid var(--border); border-radius:10px;
+    font-family:var(--body); font-size:13.5px; color:var(--text);
+    outline:none; background:#fff;
+  }
+  .catalogue-search:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  .catalogue-sort{
+    padding:8px 12px; border:1px solid var(--border); border-radius:10px;
+    font-family:var(--body); font-size:13px; color:var(--text); background:#fff; outline:none; cursor:pointer;
+  }
+  .cat-summary-bar{
+    display:flex; gap:20px; flex-wrap:wrap; padding:14px 22px; border-bottom:1px solid var(--border);
+  }
+  .cat-stat{ display:flex; flex-direction:column; gap:1px; }
+  .cat-stat-val{ font-family:var(--display); font-weight:700; font-size:22px; color:var(--navy); }
+  .cat-stat-lbl{ font-family:var(--mono); font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .catalogue-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(290px, 1fr));
+    gap:14px; padding:18px 22px 28px;
+  }
+  .cat-card{
+    border:1px solid var(--border); border-radius:13px; overflow:hidden; background:#fff;
+    cursor:pointer; transition:box-shadow .15s,transform .12s;
+  }
+  .cat-card:hover{ box-shadow:0 6px 20px rgba(22,36,59,.1); transform:translateY(-2px); }
+  .cat-card-head{
+    padding:13px 15px 9px; border-bottom:1px solid var(--border);
+    display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+  }
+  .cat-part-name{
+    font-family:var(--display); font-weight:700; font-size:14px; color:var(--navy);
+    word-break:break-all; line-height:1.3;
+  }
+  .cat-mpn{ font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px; }
+  .cat-qty-badge{
+    font-family:var(--mono); font-size:12px; font-weight:700;
+    background:var(--navy); color:#fff; padding:3px 10px; border-radius:20px; white-space:nowrap; flex-shrink:0;
+  }
+  .cat-customers{ padding:8px 14px 10px; display:flex; flex-direction:column; gap:5px; }
+  .cat-cust-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:5px 0; border-bottom:1px solid #F3F5F8; font-size:12.5px;
+  }
+  .cat-cust-row:last-child{ border-bottom:none; }
+  .cat-cust-name{ font-weight:600; color:var(--navy); font-family:var(--display); font-size:12.5px; }
+  .cat-cust-qty{
+    font-family:var(--mono); font-size:11.5px; font-weight:700;
+    padding:2px 8px; border-radius:6px; background:#F3F5F8; color:var(--navy); white-space:nowrap;
+  }
+  .cat-pills{ display:flex; gap:4px; flex-wrap:wrap; margin-top:3px; }
+  .cat-pill{ font-size:10px; font-weight:600; padding:2px 6px; border-radius:5px; }
+  .cat-pill-shipped{ background:#E3F6EB; color:#1E7A46; }
+  .cat-pill-pending{ background:#FFF4D6; color:#9A6B00; }
+  .cat-card-foot{
+    display:flex; gap:8px; align-items:center;
+    padding:6px 14px 10px; font-family:var(--mono); font-size:10.5px; color:var(--muted); flex-wrap:wrap;
+  }
+  .cat-empty{
+    grid-column:1/-1; text-align:center; color:var(--muted);
+    padding:40px 0; font-family:var(--body); font-size:14px;
+  }
+  .cat-close-btn{
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); color:#fff;
+    border-radius:9px; padding:8px 16px; font-family:var(--body); font-size:13px; font-weight:600;
+    cursor:pointer; transition:background .12s;
+  }
+  .cat-close-btn:hover{ background:rgba(255,255,255,.22); }
+  .cat-color-strip{ height:4px; width:100%; }
+
+  /* Clickable plan-date chip in catalogue */
+  .cat-date-chip{
+    display:inline-flex; align-items:center; gap:2px;
+    padding:2px 7px; border-radius:5px;
+    background:#EEF4FF; color:#1B6FAE; border:1px solid #C7DFFB;
+    font-family:var(--mono); font-size:11px; font-weight:600;
+    cursor:pointer; transition:background .12s, box-shadow .12s;
+    margin-right:2px;
+  }
+  .cat-date-chip:hover{ background:#D6EAFF; box-shadow:0 2px 6px rgba(27,111,174,.2); }
+
+  /* Cat date popup */
+  .cat-date-popup{
+    position:fixed; z-index:1200;
+    background:#fff; border:1px solid var(--border);
+    border-radius:12px; box-shadow:0 10px 36px rgba(22,36,59,.18);
+    width:300px; max-height:380px;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .cat-date-popup-head{
+    background:var(--navy); color:#fff;
+    padding:12px 14px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:8px;
+  }
+  .cat-date-popup-head h5{ font-family:var(--display); font-size:13px; font-weight:700; margin:0; }
+  .cat-date-popup-head p{ font-size:11px; color:#A9B4C9; font-family:var(--mono); margin:2px 0 0; }
+  .cat-date-popup-close{
+    background:rgba(255,255,255,.1); border:none; color:#fff;
+    width:22px; height:22px; border-radius:5px; cursor:pointer;
+    font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .cat-date-popup-close:hover{ background:rgba(255,255,255,.22); }
+  .cat-date-popup-body{
+    overflow-y:auto; flex:1; padding:10px 12px 12px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .cat-date-popup-row{
+    display:flex; align-items:center; gap:8px;
+    padding:8px 10px; border:1px solid var(--border);
+    border-radius:8px; background:#FAFBFD;
+  }
+  .cat-date-popup-info{ flex:1; min-width:0; }
+  .cat-date-popup-pn{ font-family:var(--mono); font-size:12px; font-weight:600; color:var(--navy); }
+  .cat-date-popup-meta{ font-size:11px; color:var(--muted); margin-top:1px; }
+  .cat-date-popup-qty{ font-family:var(--mono); font-weight:700; font-size:13px; color:var(--accent); white-space:nowrap; }
+  .cat-date-popup-link{
+    font-size:11px; font-weight:600; font-family:var(--body);
+    color:#1B6FAE; background:#E3F1FB; border:none;
+    border-radius:5px; padding:3px 8px; cursor:pointer; white-space:nowrap;
+  }
+  .cat-date-popup-link:hover{ background:#C7DFFB; }
+
+  /* ---------- Catalogue card selection ---------- */
+  .cat-card{ position:relative; }
+  .cat-card-checkbox{
+    position:absolute; top:10px; right:10px;
+    width:18px; height:18px;
+    accent-color:var(--accent);
+    cursor:pointer; z-index:2;
+    display:none;
+  }
+  .cat-select-mode .cat-card-checkbox{ display:block; }
+  .cat-select-mode .cat-card{ cursor:pointer; transition:box-shadow .12s; }
+  .cat-select-mode .cat-card:hover{ box-shadow:0 4px 16px rgba(255,122,60,.15); }
+  .cat-card.selected{ border:2px solid var(--accent)!important; box-shadow:0 0 0 3px var(--accent-soft)!important; }
+  .cat-export-bar{
+    display:none; padding:10px 22px;
+    background:var(--navy); color:#fff;
+    align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .cat-export-bar.show{ display:flex; }
+  .cat-export-bar-label{ font-family:var(--mono); font-size:12.5px; color:#A9B4C9; flex:1; }
+  .cat-export-bar-label strong{ color:#fff; font-size:14px; margin-right:4px; }
+
+  /* Month filter bar */
+  .cat-month-bar{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 22px 0;
+  }
+  .cat-month-pill{
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .13s ease;
+    white-space: nowrap;
+  }
+  .cat-month-pill:hover{ border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .cat-month-pill.active{ background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  /* ---------- Drag-to-reorder rows ---------- */
+  .drag-handle{
+    cursor: grab;
+    color: #C4CADA;
+    font-size: 14px;
+    padding: 0 4px;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    transition: color .12s;
+    line-height: 1;
+  }
+  .drag-handle:hover{ color: var(--accent); }
+  td.idx{ position: relative; }
+  td.idx .idx-inner{ display:flex; align-items:center; gap:4px; justify-content:center; }
+  tr.drag-over > td { border-top: 2px solid var(--accent) !important; }
+  tr.drag-dragging { opacity: 0.38; }
+  .update-summary{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+  }
+  .update-badge{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 7px;
+  }
+  .update-badge.matched { background:#E3F6EB; color:#1E7A46; }
+  .update-badge.unmatched { background:#FFF3F1; color:var(--danger); }
+  .update-badge.updated  { background:#E3F1FB; color:#1B6FAE; }
+  .update-badge.skipped  { background:#F5F5F5; color:var(--muted); }
+
+  /* Manual resolve section */
+  .manual-resolve-section{
+    margin-top:8px;padding:10px 12px;
+    background:#FFF9EC;border:1px solid #FBE7AE;border-radius:9px;
+  }
+  .manual-resolve-title{
+    font-family:var(--display);font-size:12.5px;font-weight:700;
+    color:#9A6B00;margin-bottom:8px;display:flex;align-items:center;gap:6px;
+  }
+  .manual-resolve-item{
+    border:1px solid var(--border);border-radius:8px;
+    background:#fff;margin-bottom:8px;overflow:hidden;
+  }
+  .manual-resolve-item:last-child{margin-bottom:0;}
+  .manual-resolve-head{
+    padding:8px 12px;background:#FAFBFD;
+    border-bottom:1px solid var(--border);
+    font-family:var(--mono);font-size:12px;font-weight:600;color:var(--navy);
+  }
+  .manual-resolve-incoming{
+    padding:6px 12px;font-size:11px;color:var(--muted);
+    border-bottom:1px solid var(--border);font-family:var(--mono);
+  }
+  .manual-resolve-option{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;
+    transition:background .1s;
+  }
+  .manual-resolve-option:last-child{border-bottom:none;}
+  .manual-resolve-option:hover{background:#EEF4FF;}
+  .manual-resolve-option.picked{background:#E3F6EB!important;}
+  .manual-resolve-option input[type=radio]{accent-color:var(--accent);cursor:pointer;margin-top:3px;}
+  .manual-resolve-row-detail{flex:1;font-family:var(--mono);font-size:11.5px;line-height:1.6;}
+
+  .update-table-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; }
+  .update-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  .update-table th{
+    background:#FAFBFD;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    padding:8px 10px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  .update-table td{
+    padding:7px 10px;
+    border-bottom:1px solid var(--border);
+    vertical-align:middle;
+    white-space:nowrap;
+  }
+  .update-table tr:last-child td{ border-bottom:none; }
+  .update-table tr.row-matched td{ background:#F6FFF9; }
+  .update-table tr.row-unmatched td{ background:#FFF8F8; }
+  .update-cell-old{ color:var(--muted); text-decoration:line-through; font-size:11px; display:block; }
+  .update-cell-new{ color:#1E7A46; font-weight:600; }
+  .update-cell-same{ color:var(--muted); }
+  .update-field-chip{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:600;
+    padding:1px 6px;
+    border-radius:4px;
+    margin:1px 2px;
+    background:#E3F1FB;
+    color:#1B6FAE;
+  }
+  .update-scope-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:#FAFBFD;
+    flex-wrap:wrap;
+  }
+  .update-scope-label{ font-size:12.5px; font-weight:600; color:var(--navy); flex-shrink:0; }
+  .update-scope-checks{ display:flex; gap:10px; flex-wrap:wrap; }
+  .update-scope-check{ display:flex; align-items:center; gap:5px; font-size:12.5px; cursor:pointer; }
+  .update-scope-check input{ accent-color:var(--accent); width:15px; height:15px; cursor:pointer; }
+  .modal-body-scroll{ max-height:340px; overflow-y:auto; padding:0 22px; }
+  .import-sheet-info{ flex: 1; min-width: 0; }
+  .import-sheet-name{
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--navy);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .import-sheet-meta{
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .import-sheet-badge{
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #E3F1FB;
+    color: #1B6FAE;
+    flex-shrink: 0;
+  }
+  .import-sheet-badge.new-badge{ background: #E3F6EB; color: #1E7A46; }
+  .import-mode-toggle{
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .import-mode-toggle input[type="radio"]{ display:none; }
+  .import-mode-toggle label{
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--body);
+    cursor: pointer;
+    color: var(--muted);
+    background: #fff;
+    transition: all .12s ease;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .import-mode-toggle input[type="radio"]:checked + label{
+    background: var(--navy);
+    color: #fff;
+  }
+  .modal-foot{
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color:#fff;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-family: var(--body);
+    box-shadow: 0 8px 24px rgba(22,36,59,0.25);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease, transform .25s ease;
+    display:flex; align-items:center; gap:8px;
+    z-index: 100;
+  }
+  .toast.show{
+    opacity:1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast .dot{ width:8px; height:8px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+
+  @media (max-width: 640px){
+    .topbar{ padding: 18px 16px; }
+    .layout{ padding: 18px 12px 60px; }
+    thead th, tbody td{ padding: 8px 6px; }
+    .card-head{ padding: 14px 14px; }
+  }
+
+  /* ---------- Global PO search ---------- */
+  .global-search-wrap{
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .global-search-input{
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 16px 11px 42px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    font-family: var(--body);
+    font-size: 14px;
+    color: var(--text);
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238A93A3' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E") no-repeat 14px center;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .global-search-input:focus{
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .global-search-results{
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(22,36,59,.14);
+    z-index: 500;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+  .global-search-empty{
+    padding: 20px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+  .global-search-item{
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .global-search-item:last-child{ border-bottom: none; }
+  .global-search-item:hover{ background: #F3F5F8; }
+  .global-search-item-icon{
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .global-search-item-body{ flex: 1; min-width: 0; }
+  .global-search-item-po{
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--navy);
+  }
+  .global-search-item-meta{
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .global-search-item-cust{
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  mark.hl{
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 3px;
+    padding: 0 2px;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">📦</div>
+    <div>
+      <h1>Shipment Record</h1>
+      <p id="dateStamp">SHIPMENT MANIFEST</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-outline btn-sm" id="undoBtn" disabled>↩ ย้อนกลับ</button>
+    <button class="btn btn-outline btn-sm" id="trashBtn">🗑 ประวัติที่ลบ</button>
+    <button class="btn btn-outline btn-sm" id="archiveBtn">📦 Archive</button>
+    <button class="btn btn-outline btn-sm" id="templateBtn">📋 ดาวน์โหลด Template</button>
+    <label class="btn btn-outline btn-sm" for="importFile" id="importLabel">📥 Import Excel</label>
+    <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none;">
+    <label class="btn btn-outline btn-sm" for="updateByPoFile" id="updateByPoLabel">🔄 Update by PO</label>
+    <input type="file" id="updateByPoFile" accept=".xlsx,.xls" style="display:none;">
+    <button class="btn btn-accent btn-sm" id="catalogueBtn">📊 Part Catalogue</button>
+    <button class="btn btn-outline btn-sm" id="exportAllBtn">⬇ Export ทั้งหมด (.xlsx)</button>
+  </div>
+</div>
+
+<div class="layout">
+
+  <div id="alertBanner"></div>
+
+  <div class="global-search-wrap">
+    <input type="text" id="globalPoSearch" class="global-search-input"
+      placeholder="🔍 ค้นหา PO / Part No. / MPN / Tracking จากทุกลูกค้า..."
+      autocomplete="off">
+    <div id="globalSearchResults" class="global-search-results" style="display:none;"></div>
+  </div>
+
+  <div class="tabs-row" id="tabsRow"></div>
+
+  <div class="card" id="cardArea"></div>
+
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
+<div id="importModalOverlay" style="display:none;"></div>
+<div id="updatePoModalOverlay" style="display:none;"></div>
+<div id="daySummaryPopup" style="display:none;" class="day-summary-popup"></div>
+<div id="catDatePopup" style="display:none;" class="cat-date-popup"></div>
+<div id="catalogueOverlay" style="display:none;position:fixed;inset:0;background:rgba(22,36,59,.35);z-index:800;overflow-y:auto;padding:32px 16px 64px;"></div>
+
+<div class="trash-overlay" id="archiveOverlay"></div>
+<div class="archive-panel" id="archivePanel">
+  <div class="trash-panel-head">
+    <div>
+      <h3>📦 Archive</h3>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:2px;font-family:var(--mono);">รายการที่จัดส่งแล้ว (เก็บไว้อ้างอิง)</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="btn btn-ghost btn-sm" id="archiveExportBtn" style="font-size:12px;">⬇ Export</button>
+      <button class="trash-close" id="archiveCloseBtn">✕</button>
+    </div>
+  </div>
+  <div class="archive-controls" id="archiveControls"></div>
+  <div class="trash-list" id="archiveList"></div>
+</div>
+
+<div class="trash-overlay" id="trashOverlay"></div>
+<div class="trash-panel" id="trashPanel">
+  <div class="trash-panel-head">
+    <h3>🗑 ประวัติที่ถูกลบ</h3>
+    <button class="trash-close" id="trashCloseBtn">✕</button>
+  </div>
+  <div class="trash-list" id="trashList"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'shipmentManifestData';
+const TRASH_KEY   = 'shipmentManifestTrash';
+
+const STATUS_OPTIONS = [
+  { value: '',          label: '— เลือกสถานะ —', cls: 'status-empty' },
+  { value: 'shipped',   label: 'ส่งแล้ว',        cls: 'status-shipped' },
+  { value: 'pending',   label: 'รอการจัดส่ง',     cls: 'status-pending' },
+];
+
+const THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+function statusMeta(value){
+  return STATUS_OPTIONS.find(o => o.value === value) || STATUS_OPTIONS[0];
+}
+
+function rowHasData(r){
+  return !!(r.tracking || r.date || r.part || r.forwarder || r.po || r.status || r.planDate || r.inv || r.mpn || r.so || r.do || r.shipMode || r.note || r.qty);
+}
+
+const SHIP_MODE_OPTIONS = [
+  { value: '',        label: '— เลือก —' },
+  { value: 'Sea',     label: 'Sea' },
+  { value: 'Air',     label: 'Air' },
+  { value: 'Express', label: 'Express' },
+];
+
+const COLUMNS = [
+  { field: 'part',      label: 'Part No.',          type: 'text',   placeholder: 'เช่น PN-0042' },
+  { field: 'mpn',       label: 'MPN',               type: 'text',   placeholder: 'เช่น MPN-1234' },
+  { field: 'po',        label: 'เลข PO',            type: 'text',   placeholder: 'เช่น PO-2026-001' },
+  { field: 'qty',       label: "Q'ty",              type: 'number', placeholder: '0' },
+  { field: 'so',        label: 'SO',                type: 'text',   placeholder: 'เช่น SO-2026-001' },
+  { field: 'do',        label: 'DO',                type: 'text',   placeholder: 'เช่น DO-2026-001' },
+  { field: 'planDate',  label: 'วันที่ Plan จัดส่ง', type: 'date' },
+  { field: 'date',      label: 'วันที่จัดส่ง',       type: 'date' },
+  { field: 'shipMode',  label: 'Ship Mode',         type: 'select', options: SHIP_MODE_OPTIONS },
+  { field: 'forwarder', label: 'Forwarder',         type: 'text',   placeholder: 'เช่น DHL, Kerry' },
+  { field: 'tracking',  label: 'เลข Tracking',      type: 'text',   placeholder: 'เช่น TH123456789' },
+  { field: 'inv',       label: 'INV',               type: 'text',   placeholder: 'เช่น INV-2026-001' },
+  { field: 'status',    label: 'Status',            type: 'select', options: STATUS_OPTIONS },
+  { field: 'note',      label: 'Noted',             type: 'text',   placeholder: 'หมายเหตุ' },
+];
+
+// 13 data columns, each ~20 characters wide for both export and import template
+const COLUMN_WIDTHS_EXPORT = COLUMNS.map(() => ({wch: 20}));
+
+let state = loadState();
+let filterState = {};
+let colHiddenValues = {};  // field -> Set of hidden display values
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed.customers && parsed.customers.length){
+        // migrate old rows to include new fields
+        parsed.customers.forEach(name => {
+          (parsed.data[name] || []).forEach(r => {
+            if(r.forwarder === undefined) r.forwarder = '';
+            if(r.po === undefined) r.po = '';
+            if(r.status === undefined) r.status = '';
+            if(r.planDate === undefined) r.planDate = '';
+            if(r.inv === undefined) r.inv = '';
+            if(r.mpn === undefined) r.mpn = '';
+            if(r.so === undefined) r.so = '';
+            if(r.do === undefined) r.do = '';
+            if(r.shipMode === undefined) r.shipMode = '';
+            if(r.note === undefined) r.note = '';
+            if(r.qty === undefined) r.qty = '';
+            if(r.status === 'waiting_so') r.status = '';
+          });
+        });
+        return parsed;
+      }
+    }
+  }catch(e){}
+  // default starter state
+  const def = {
+    customers: ['ลูกค้า A'],
+    active: 'ลูกค้า A',
+    data: { 'ลูกค้า A': [ emptyRow() ] }
+  };
+  return def;
+}
+
+/* ---------- Undo system ---------- */
+const UNDO_STACK_LIMIT = 30;
+let undoStack = [];
+let isUndoing = false;
+
+function saveState(){
+  if(!isUndoing){
+    // Push a snapshot of the PREVIOUS state (before this change) for undo
+    try{
+      undoStack.push(JSON.stringify(state));
+      if(undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+    }catch(e){}
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  updateUndoBtn();
+}
+
+function performUndo(){
+  if(undoStack.length === 0){
+    showToast('ไม่มีรายการให้ย้อนกลับแล้ว');
+    return;
+  }
+  const prevSnapshot = undoStack.pop();
+  isUndoing = true;
+  state = JSON.parse(prevSnapshot);
+  // Keep active pointing somewhere valid
+  if(!state.customers.includes(state.active)){
+    state.active = state.customers[0] || '';
+  }
+  filterState = {};
+  colHiddenValues = {};
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  isUndoing = false;
+  updateUndoBtn();
+  renderAll();
+  showToast('↩ ย้อนกลับแล้ว');
+}
+
+function updateUndoBtn(){
+  const btn = document.getElementById('undoBtn');
+  if(!btn) return;
+  btn.disabled = undoStack.length === 0;
+  btn.title = undoStack.length > 0 ? `ย้อนกลับ (${undoStack.length} ขั้นตอน)` : 'ไม่มีรายการให้ย้อนกลับ';
+}
+
+function uniqueName(base){
+  let name = base;
+  let i = 2;
+  while(state.customers.includes(name)){
+    name = base + ' ' + i;
+    i++;
+  }
+  return name;
+}
+
+function addCustomer(){
+  const name = uniqueName('ลูกค้าใหม่');
+  state.customers.push(name);
+  state.data[name] = [ emptyRow() ];
+  state.active = name;
+  saveState();
+  renderAll();
+  showToast('เพิ่มหน้าลูกค้าใหม่แล้ว');
+}
+
+function deleteCustomer(name){
+  if(state.customers.length <= 1){
+    showToast('ต้องมีอย่างน้อย 1 หน้า');
+    return;
+  }
+  if(!confirm('ลบหน้า "' + name + '" และข้อมูลทั้งหมดในหน้านี้?')) return;
+  // Save to trash before deleting
+  const trash = loadTrash();
+  trash.unshift({
+    name,
+    rows: JSON.parse(JSON.stringify(state.data[name] || [])),
+    deletedAt: new Date().toISOString()
+  });
+  // Keep max 20 deleted sheets
+  if(trash.length > 20) trash.splice(20);
+  saveTrash(trash);
+
+  state.customers = state.customers.filter(c => c !== name);
+  delete state.data[name];
+  if(state.active === name) state.active = state.customers[0];
+  saveState();
+  renderAll();
+  showToast(`ลบ "${name}" แล้ว — กด "ประวัติที่ลบ" เพื่อกู้คืน`);
+}
+
+function loadTrash(){
+  try{ return JSON.parse(localStorage.getItem(TRASH_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveTrash(trash){ localStorage.setItem(TRASH_KEY, JSON.stringify(trash)); }
+
+function openTrashPanel(){
+  const trash = loadTrash();
+  const list = document.getElementById('trashList');
+  if(trash.length === 0){
+    list.innerHTML = '<div class="trash-empty">ยังไม่มีรายการที่ถูกลบ</div>';
+  } else {
+    list.innerHTML = trash.map((item, i) => {
+      const dt = new Date(item.deletedAt);
+      const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+      const dateStr = `${dt.getDate()} ${months[dt.getMonth()]} ${dt.getFullYear()+543} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      const filled = item.rows.filter(rowHasData).length;
+      return `
+        <div class="trash-item">
+          <div class="trash-item-head">
+            <span class="trash-item-name">${escapeHtml(item.name)}</span>
+            <button class="btn btn-accent btn-sm" style="padding:5px 12px;font-size:12px;" data-restore="${i}">↩ กู้คืน</button>
+          </div>
+          <div class="trash-item-meta">ลบเมื่อ ${dateStr} · ${filled} รายการ</div>
+          <button class="btn btn-danger-ghost btn-sm" style="font-size:11.5px;" data-purge="${i}">ลบถาวร</button>
+        </div>`;
+    }).join('');
+    list.querySelectorAll('[data-restore]').forEach(btn => {
+      btn.addEventListener('click', () => restoreTrash(+btn.dataset.restore));
+    });
+    list.querySelectorAll('[data-purge]').forEach(btn => {
+      btn.addEventListener('click', () => purgeTrash(+btn.dataset.purge));
+    });
+  }
+  document.getElementById('trashPanel').classList.add('open');
+  document.getElementById('trashOverlay').classList.add('open');
+}
+
+function restoreTrash(i){
+  const trash = loadTrash();
+  const item = trash[i];
+  if(!item) return;
+  let targetName = item.name;
+  if(state.customers.includes(targetName)){
+    targetName = uniqueName(targetName + ' (กู้คืน)');
+  }
+  state.customers.push(targetName);
+  state.data[targetName] = item.rows;
+  trash.splice(i, 1);
+  saveTrash(trash);
+  saveState();
+  state.active = targetName;
+  closeTrashPanel();
+  renderAll();
+  showToast(`กู้คืน "${targetName}" สำเร็จ`);
+}
+
+function purgeTrash(i){
+  if(!confirm('ลบถาวร จะไม่สามารถกู้คืนได้อีก')) return;
+  const trash = loadTrash();
+  trash.splice(i, 1);
+  saveTrash(trash);
+  openTrashPanel();
+}
+
+function closeTrashPanel(){
+  document.getElementById('trashPanel').classList.remove('open');
+  document.getElementById('trashOverlay').classList.remove('open');
+}
+
+function startRenameTab(tab, label, name){
+  const input = document.createElement('input');
+  input.className = 'tab-input';
+  input.value = name;
+  tab.replaceChild(input, label);
+  input.focus();
+  input.select();
+  const commit = () => renameCustomer(name, input.value);
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (ev) => {
+    if(ev.key === 'Enter') input.blur();
+    if(ev.key === 'Escape'){ input.value = name; input.blur(); }
+  });
+}
+
+function renameCustomer(oldName, newNameRaw){
+  const newName = newNameRaw.trim();
+  if(!newName || newName === oldName) { renderAll(); return; }
+  if(state.customers.includes(newName)){
+    showToast('มีชื่อนี้อยู่แล้ว');
+    renderAll();
+    return;
+  }
+  const idx = state.customers.indexOf(oldName);
+  state.customers[idx] = newName;
+  state.data[newName] = state.data[oldName];
+  delete state.data[oldName];
+  if(state.active === oldName) state.active = newName;
+  saveState();
+  renderAll();
+}
+
+function setActive(name){
+  state.active = name;
+  filterState = {};
+  colHiddenValues = {};
+  saveState();
+  renderAll();
+}
+
+function addRow(){
+  state.data[state.active].push(emptyRow());
+  saveState();
+  renderAll();
+}
+
+function duplicateRow(idx){
+  const rows = state.data[state.active];
+  const copy = { ...rows[idx] };
+  rows.splice(idx + 1, 0, copy);
+  saveState();
+  renderTableBody();
+  showToast('Duplicate แถวแล้ว');
+}
+
+function deleteRow(idx){
+  const rows = state.data[state.active];
+  if(rows.length <= 1){
+    rows[0] = emptyRow();
+  } else {
+    rows.splice(idx, 1);
+  }
+  saveState();
+  renderAll();
+  showToast('ลบแถวแล้ว');
+}
+
+function updateCell(idx, field, value){
+  state.data[state.active][idx][field] = value;
+  saveState();
+  if(field === 'planDate' || field === 'status'){
+    renderAlerts();
+  }
+  if(field === 'part'){
+    renderTableBody();
+  }
+  if(field === 'planDate'){
+    // Re-sort all rows by planDate whenever a plan date changes
+    state.data[state.active] = sortRowsByPlanDate(state.data[state.active]);
+    saveState();
+    renderTableBody();
+  }
+}
+
+function renderTabs(){
+  const row = document.getElementById('tabsRow');
+  row.innerHTML = '';
+  let dragSrcName = null;
+
+  state.customers.forEach(name => {
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (name === state.active ? ' active' : '');
+    tab.setAttribute('draggable', 'true');
+    tab.dataset.name = name;
+
+    const label = document.createElement('span');
+    label.textContent = name;
+    label.style.flex = '1';
+    label.style.overflow = 'hidden';
+    label.style.textOverflow = 'ellipsis';
+    label.title = 'ดับเบิลคลิก หรือกด ✎ เพื่อแก้ไขชื่อ';
+    label.addEventListener('click', () => setActive(name));
+    label.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      startRenameTab(tab, label, name);
+    });
+
+    const count = document.createElement('span');
+    count.className = 'tab-count';
+    const rowCount = (state.data[name] || []).filter(rowHasData).length;
+    count.textContent = rowCount;
+
+    const edit = document.createElement('span');
+    edit.className = 'tab-edit';
+    edit.textContent = '✎';
+    edit.title = 'แก้ไขชื่อลูกค้า';
+    edit.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startRenameTab(tab, label, name);
+    });
+
+    const close = document.createElement('span');
+    close.className = 'tab-close';
+    close.textContent = '✕';
+    close.title = 'ลบหน้านี้';
+    close.addEventListener('click', (e) => { e.stopPropagation(); deleteCustomer(name); });
+
+    tab.appendChild(label);
+    tab.appendChild(count);
+    tab.appendChild(edit);
+    tab.appendChild(close);
+    tab.addEventListener('click', () => setActive(name));
+
+    // ── Drag events ──
+    tab.addEventListener('dragstart', e => {
+      dragSrcName = name;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', name);
+      setTimeout(() => tab.style.opacity = '0.4', 0);
+    });
+    tab.addEventListener('dragend', () => {
+      tab.style.opacity = '';
+      row.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-drag-over'));
+    });
+    tab.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      row.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-drag-over'));
+      if(name !== dragSrcName) tab.classList.add('tab-drag-over');
+    });
+    tab.addEventListener('dragleave', () => tab.classList.remove('tab-drag-over'));
+    tab.addEventListener('drop', e => {
+      e.preventDefault();
+      tab.classList.remove('tab-drag-over');
+      const from = dragSrcName;
+      const to = name;
+      if(!from || from === to) return;
+      const fromIdx = state.customers.indexOf(from);
+      const toIdx   = state.customers.indexOf(to);
+      if(fromIdx === -1 || toIdx === -1) return;
+      state.customers.splice(fromIdx, 1);
+      state.customers.splice(toIdx, 0, from);
+      saveState();
+      renderTabs();
+    });
+
+    row.appendChild(tab);
+  });
+
+  const addBtn = document.createElement('div');
+  addBtn.className = 'tab-add';
+  addBtn.textContent = '+';
+  addBtn.title = 'เพิ่มหน้าลูกค้าใหม่';
+  addBtn.addEventListener('click', addCustomer);
+  row.appendChild(addBtn);
+}
+
+function renderCard(){
+  const card = document.getElementById('cardArea');
+  const rows = state.data[state.active] || [];
+  const filledCount = rows.filter(rowHasData).length;
+  const activeFilterCount = Object.values(filterState).filter(v => v).length;
+
+  const headCells = COLUMNS.map(col => {
+    const isFiltered = !!(filterState[col.field]);
+    const colAttr = `data-col="${col.field}"`;
+    return `<th ${colAttr} class="${isFiltered ? 'col-filtered' : ''}">
+      <div class="col-head-wrap">
+        <span>${escapeHtml(col.label)}</span>
+        <button class="col-filter-btn ${isFiltered ? 'active' : ''}" data-col-btn="${col.field}" title="กรองข้อมูล">▾</button>
+      </div>
+    </th>`;
+  }).join('');
+
+  const clearBtnHtml = activeFilterCount
+    ? `<button class="btn btn-ghost btn-sm" id="filterClearBtn" style="font-size:12px;padding:6px 10px;">✕ ล้าง ${activeFilterCount} ตัวกรอง</button>`
+    : '';
+
+  card.innerHTML = `
+    <div class="card-head">
+      <div>
+        <h2>${escapeHtml(state.active)}</h2>
+        <div class="sub">${filledCount} รายการที่บันทึกไว้${activeFilterCount ? ` · กรองอยู่ ${activeFilterCount} คอลัมน์` : ''}</div>
+      </div>
+      <div class="card-head-actions">
+        ${clearBtnHtml}
+        <button class="btn btn-ghost btn-sm" id="exportOneBtn">⬇ Export หน้านี้</button>
+        <button class="btn btn-ghost btn-sm" id="archiveShippedBtn" style="color:#1E7A46;border-color:#CDEEDB;">📦 Archive Shipped</button>
+        <button class="btn btn-accent btn-sm" id="addRowBtn">＋ เพิ่มแถว</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-no">#</th>
+          ${headCells}
+          <th class="col-action">ลบ</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    </div>
+  `;
+
+  // Wire filter buttons
+  card.querySelectorAll('[data-col-btn]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openColDropdown(btn.dataset.colBtn, btn);
+    });
+  });
+
+  if(card.querySelector('#filterClearBtn')){
+    card.querySelector('#filterClearBtn').addEventListener('click', () => {
+      filterState = {};
+      renderCard();
+    });
+  }
+
+  card.querySelector('#addRowBtn').addEventListener('click', addRow);
+  card.querySelector('#exportOneBtn').addEventListener('click', () => exportExcel(false));
+  card.querySelector('#archiveShippedBtn').addEventListener('click', () => archiveShippedRows(state.active));
+
+  renderTableBody();
+}
+
+/* ---- Excel-style column dropdown ---- */
+let activeDropdown = null;
+
+function openColDropdown(field, triggerBtn){
+  closeColDropdown();
+
+  const col = COLUMNS.find(c => c.field === field);
+  const isDateCol = col && col.type === 'date';
+  const allRows = state.data[state.active] || [];
+
+  // Thai month names
+  const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  // For date columns: group by "เดือน YYYY" month buckets
+  // For others: unique display values
+  const valueCounts = {};
+  allRows.forEach(r => {
+    let v = (r[field] || '').toString().trim();
+    if(isDateCol && v){
+      const d = parseDate(v);
+      v = d ? `${THAI_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}` : v;
+    } else if(col && col.type === 'select' && col.options){
+      const opt = col.options.find(o => o.value === v);
+      v = opt ? opt.label : v;
+    }
+    if(!v) v = '(ว่าง)';
+    valueCounts[v] = (valueCounts[v] || 0) + 1;
+  });
+
+  const allValues = Object.keys(valueCounts).sort((a,b) => {
+    if(a === '(ว่าง)') return 1;
+    if(b === '(ว่าง)') return -1;
+    if(isDateCol){
+      // Sort by real date: parse "ม.ค. 2568" back
+      const toSort = s => {
+        const m = THAI_MONTHS.indexOf(s.split(' ')[0]);
+        const y = parseInt(s.split(' ')[1] || '0', 10) - 543;
+        return y * 100 + m;
+      };
+      return toSort(a) - toSort(b);
+    }
+    return a.localeCompare(b, 'th');
+  });
+
+  // Map display → raw values for date columns (for hidden filter matching)
+  // hidden filter stores display "month bucket" strings
+  const currentFilter = filterState[field] || '';
+  let hiddenValues = colHiddenValues[field] ? new Set(colHiddenValues[field]) : new Set();
+
+  const rect = triggerBtn.getBoundingClientRect();
+  const panel = document.createElement('div');
+  panel.className = 'col-dropdown';
+  panel.style.top  = (rect.bottom + 4) + 'px';
+  panel.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
+
+  const searchPlaceholder = isDateCol ? 'ค้นหาเดือน...' : 'ค้นหา...';
+
+  panel.innerHTML = `
+    <div class="col-dropdown-head">
+      ${isDateCol ? '' : `<input type="text" class="col-dropdown-search" placeholder="${searchPlaceholder}" id="colSearch" value="${escapeAttr(currentFilter)}">`}
+      ${isDateCol ? `<div style="font-size:11.5px;font-weight:600;color:var(--navy);padding:4px 0 6px;font-family:var(--display);">เลือกเดือน</div>` : ''}
+      <div class="col-dropdown-actions">
+        <button class="col-dropdown-action" id="colSelAll">เลือกทั้งหมด</button>
+        <button class="col-dropdown-action" id="colClearAll" style="color:var(--muted);">ล้าง</button>
+      </div>
+    </div>
+    <div class="col-dropdown-list" id="colList"></div>
+    <div class="col-dropdown-foot">
+      <button class="btn btn-ghost btn-sm" id="colCancel" style="font-size:12px;">ยกเลิก</button>
+      <button class="btn btn-accent btn-sm" id="colApply" style="font-size:12px;">✓ Apply</button>
+    </div>`;
+
+  document.body.appendChild(panel);
+  activeDropdown = { panel, field };
+
+  function renderItems(search){
+    const list = panel.querySelector('#colList');
+    const filtered = allValues.filter(v => v.toLowerCase().includes(search.toLowerCase()));
+    list.innerHTML = filtered.map(v => {
+      const checked = !hiddenValues.has(v);
+      const icon = isDateCol ? '📅 ' : '';
+      return `<div class="col-dropdown-item">
+        <input type="checkbox" ${checked ? 'checked' : ''} value="${escapeAttr(v)}">
+        <span class="item-label">${icon}${escapeHtml(v)}</span>
+        <span class="item-count">${valueCounts[v]}</span>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('input[type=checkbox]').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if(chk.checked) hiddenValues.delete(chk.value);
+        else hiddenValues.add(chk.value);
+      });
+    });
+  }
+
+  renderItems('');
+  if(!isDateCol){
+    panel.querySelector('#colSearch').focus();
+    panel.querySelector('#colSearch').addEventListener('input', e => renderItems(e.target.value));
+  }
+  panel.querySelector('#colSelAll').addEventListener('click', () => { hiddenValues.clear(); renderItems(isDateCol ? '' : (panel.querySelector('#colSearch')?.value || '')); });
+  panel.querySelector('#colClearAll').addEventListener('click', () => { allValues.forEach(v => hiddenValues.add(v)); renderItems(isDateCol ? '' : (panel.querySelector('#colSearch')?.value || '')); });
+  panel.querySelector('#colCancel').addEventListener('click', closeColDropdown);
+  panel.querySelector('#colApply').addEventListener('click', () => {
+    const searchVal = isDateCol ? '' : (panel.querySelector('#colSearch')?.value.trim() || '');
+    if(searchVal) filterState[field] = searchVal;
+    else delete filterState[field];
+    if(hiddenValues.size > 0) colHiddenValues[field] = [...hiddenValues];
+    else delete colHiddenValues[field];
+    closeColDropdown();
+    renderCard();
+  });
+
+  setTimeout(() => document.addEventListener('click', outsideClick), 0);
+  function outsideClick(e){ if(!panel.contains(e.target)){ closeColDropdown(); } }
+  activeDropdown.outsideClick = outsideClick;
+}
+
+function closeColDropdown(){
+  if(!activeDropdown) return;
+  if(activeDropdown.panel && activeDropdown.panel.parentNode)
+    activeDropdown.panel.parentNode.removeChild(activeDropdown.panel);
+  if(activeDropdown.outsideClick)
+    document.removeEventListener('click', activeDropdown.outsideClick);
+  activeDropdown = null;
+}
+
+function rowMatchesFilters(r){
+  // Text search filter
+  const textOk = Object.entries(filterState).every(([field, val]) => {
+    if(!val) return true;
+    const cellVal = (r[field] || '');
+    const col = COLUMNS.find(c => c.field === field);
+    if(col && col.type === 'select') return cellVal === val;
+    return cellVal.toLowerCase().includes(val.toLowerCase());
+  });
+  if(!textOk) return false;
+  // Hidden value filter (checkbox uncheck)
+  return Object.entries(colHiddenValues).every(([field, hiddenArr]) => {
+    if(!hiddenArr || hiddenArr.length === 0) return true;
+    const col = COLUMNS.find(c => c.field === field);
+    let displayVal = (r[field] || '').toString().trim();
+    if(col && col.type === 'date' && displayVal){
+      const d = parseDate(displayVal);
+      displayVal = d ? `${THAI_MONTHS_SHORT[d.getMonth()]} ${d.getFullYear() + 543}` : displayVal;
+    } else if(col && col.type === 'select' && col.options){
+      const opt = col.options.find(o => o.value === displayVal);
+      displayVal = opt ? opt.label : displayVal;
+    }
+    if(!displayVal) displayVal = '(ว่าง)';
+    return !hiddenArr.includes(displayVal);
+  });
+}
+
+const PART_COLOR_COUNT = 8;
+
+function buildPartColorMap(rows){
+  const map = {};
+  let idx = 0;
+  rows.forEach(r => {
+    const key = (r.part || '').trim();
+    if(key && !(key in map)){
+      map[key] = idx % PART_COLOR_COUNT;
+      idx++;
+    }
+  });
+  return map;
+}
+
+function inputWidth(val, col){
+  const minCh = col.field === 'qty' ? 7 : 22;
+  const ch = Math.max((val || '').trim().length, minCh);
+  return ch + 'ch';
+}
+
+function buildRowElement(r, rowIdx, partColorMap){
+  const tr = document.createElement('tr');
+  const partKey = (r.part || '').trim();
+  const colorIdx = partKey && partColorMap ? partColorMap[partKey] : null;
+  if(colorIdx !== null && colorIdx !== undefined){
+    tr.classList.add(`part-color-${colorIdx}`);
+  }
+
+  const cellsHtml = COLUMNS.map(col => {
+    if(col.type === 'select'){
+      const meta = col.field === 'status' ? statusMeta(r.status) : null;
+      const cls = meta ? `status-select ${meta.cls}` : 'status-select';
+      const optionsHtml = col.options.map(o =>
+        `<option value="${escapeAttr(o.value)}" ${o.value === (r[col.field] || '') ? 'selected' : ''}>${escapeHtml(o.label)}</option>`
+      ).join('');
+      return `<td data-col="${col.field}"><select class="${cls}" data-field="${col.field}">${optionsHtml}</select></td>`;
+    }
+    const type = (col.type === 'date') ? 'date' : 'text';
+    const inputMode = (col.type === 'number') ? ' inputmode="numeric"' : '';
+    const placeholder = col.placeholder ? ` placeholder="${escapeAttr(col.placeholder)}"` : '';
+    const widthStyle = (type !== 'date') ? ` style="width:${inputWidth(r[col.field], col)}"` : '';
+    if(col.field === 'part' && colorIdx !== null && colorIdx !== undefined){
+      return `<td data-col="${col.field}"><div class="part-chip part-color-dot-${colorIdx}"><input type="${type}"${inputMode}${placeholder}${widthStyle} data-field="${col.field}" value="${escapeAttr(r[col.field])}"></div></td>`;
+    }
+    return `<td data-col="${col.field}"><input type="${type}"${inputMode}${placeholder}${widthStyle} data-field="${col.field}" value="${escapeAttr(r[col.field])}"></td>`;
+  }).join('');
+
+  tr.setAttribute('draggable', 'true');
+  tr.dataset.rowIdx = rowIdx;
+
+  tr.innerHTML = `
+    <td class="idx">
+      <div class="idx-inner">
+        <span class="drag-handle" title="ลากเพื่อจัดเรียง">⠿</span>
+        <button class="row-duplicate" title="Duplicate แถวนี้">⧉</button>
+        <span class="idx-num">${rowIdx + 1}</span>
+      </div>
+    </td>
+    ${cellsHtml}
+    <td class="action-cell"><button class="row-delete" title="ลบแถวนี้">🗑</button></td>
+  `;
+
+  tr.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      updateCell(rowIdx, inp.dataset.field, inp.value);
+      if(inp.type !== 'date'){
+        const col = COLUMNS.find(c => c.field === inp.dataset.field);
+        if(col) inp.style.width = inputWidth(inp.value, col);
+      }
+      // Refresh day summary if planDate changed and popup is currently open
+      if(inp.dataset.field === 'planDate'){
+        const popup = document.getElementById('daySummaryPopup');
+        if(popup.style.display !== 'none') openDaySummary(inp.value, inp);
+      }
+    });
+  });
+
+  // Day-summary trigger: separate icon button next to the planDate input,
+  // so clicking the date field itself always opens the native calendar normally.
+  const planDateCell = tr.querySelector('td[data-col="planDate"]');
+  if(planDateCell){
+    const planDateInput = planDateCell.querySelector('input[type="date"]');
+    const summaryBtn = document.createElement('button');
+    summaryBtn.type = 'button';
+    summaryBtn.className = 'plan-date-summary-btn';
+    summaryBtn.title = 'View all items shipping this day';
+    summaryBtn.textContent = '📋';
+    summaryBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const val = planDateInput.value;
+      if(val) openDaySummary(val, summaryBtn);
+    });
+    planDateCell.appendChild(summaryBtn);
+  }
+
+  const statusSelect = tr.querySelector('select[data-field="status"]');
+  if(statusSelect){
+    statusSelect.addEventListener('change', () => {
+      updateCell(rowIdx, 'status', statusSelect.value);
+      const m = statusMeta(statusSelect.value);
+      STATUS_OPTIONS.forEach(o => statusSelect.classList.remove(o.cls));
+      statusSelect.classList.add(m.cls);
+    });
+  }
+
+  const shipModeSelect = tr.querySelector('select[data-field="shipMode"]');
+  if(shipModeSelect){
+    shipModeSelect.addEventListener('change', () => {
+      updateCell(rowIdx, 'shipMode', shipModeSelect.value);
+    });
+  }
+
+  tr.querySelector('.row-delete').addEventListener('click', () => deleteRow(rowIdx));
+  tr.querySelector('.row-duplicate').addEventListener('click', () => duplicateRow(rowIdx));
+
+  // Drag-to-reorder
+  tr.addEventListener('dragstart', e => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(rowIdx));
+    setTimeout(() => tr.classList.add('drag-dragging'), 0);
+  });
+  tr.addEventListener('dragend', () => tr.classList.remove('drag-dragging'));
+  tr.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('#tbody tr').forEach(r => r.classList.remove('drag-over'));
+    tr.classList.add('drag-over');
+  });
+  tr.addEventListener('dragleave', () => tr.classList.remove('drag-over'));
+  tr.addEventListener('drop', e => {
+    e.preventDefault();
+    tr.classList.remove('drag-over');
+    const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    const toIdx = rowIdx;
+    if(fromIdx === toIdx) return;
+    const rows = state.data[state.active];
+    const [moved] = rows.splice(fromIdx, 1);
+    rows.splice(toIdx, 0, moved);
+    saveState();
+    renderTableBody();
+  });
+
+  return tr;
+}
+
+function renderTableBody(){
+  const tbody = document.getElementById('tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  const rows = state.data[state.active] || [];
+  const hasFilters = Object.values(filterState).some(v => v) || Object.keys(colHiddenValues).length > 0;
+  const partColorMap = buildPartColorMap(rows);
+
+  let shown = 0;
+  rows.forEach((r, idx) => {
+    if(hasFilters && !rowMatchesFilters(r)) return;
+    tbody.appendChild(buildRowElement(r, idx, partColorMap));
+    shown++;
+  });
+
+  if(shown === 0){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = COLUMNS.length + 2;
+    td.style.textAlign = 'center';
+    td.style.color = 'var(--muted)';
+    td.style.padding = '24px';
+    td.textContent = hasFilters ? 'ไม่พบรายการที่ตรงกับตัวกรอง' : 'ยังไม่มีข้อมูล';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+}
+
+/* ============================================================
+   📊 PART CATALOGUE — summary across all customers / sheets
+   ============================================================ */
+
+const STRIP_COLORS = ['#F5A623','#3A8FE0','#7B5CF0','#2DBF6A','#E0437A','#20B2C4','#E07A20','#9B4CF0'];
+
+/* ---------- Catalogue date chip popup ---------- */
+let catDatePopupOutside = null;
+
+function closeCatDatePopup(){
+  document.getElementById('catDatePopup').style.display = 'none';
+  if(catDatePopupOutside){ document.removeEventListener('click', catDatePopupOutside); catDatePopupOutside = null; }
+}
+
+function openCatDatePopup(dateStr, customer, anchorEl){
+  closeCatDatePopup();
+  // Find all rows across all customers matching this planDate
+  const rows = [];
+  state.customers.forEach(cust => {
+    (state.data[cust] || []).forEach((r, idx) => {
+      if((r.planDate || '') === dateStr){
+        rows.push({ cust, idx, r });
+      }
+    });
+  });
+  if(rows.length === 0) return;
+
+  const totalQty = rows.reduce((s, {r}) => s + (parseQty(r.qty)), 0);
+  const popup = document.getElementById('catDatePopup');
+
+  const rowsHtml = rows.map(({cust, idx, r}) => {
+    const qty = parseQty(r.qty);
+    return `
+      <div class="cat-date-popup-row">
+        <div class="cat-date-popup-info">
+          <div class="cat-date-popup-pn">${escapeHtml(r.part || r.mpn || '—')}${r.mpn ? ` <span style="font-weight:400;color:var(--muted);font-size:10.5px;">(${escapeHtml(r.mpn)})</span>` : ''}</div>
+          <div class="cat-date-popup-meta">${escapeHtml(cust)}${r.po ? ' · PO '+escapeHtml(r.po) : ''}</div>
+        </div>
+        <span class="cat-date-popup-qty">${qty > 0 ? qty.toLocaleString() : '—'}</span>
+        <button class="cat-date-popup-link" data-cust="${escapeAttr(cust)}" data-idx="${idx}">→ View Record</button>
+      </div>`;
+  }).join('');
+
+  popup.innerHTML = `
+    <div class="cat-date-popup-head">
+      <div>
+        <h5>📅 ${formatThaiDate(dateStr)}</h5>
+        <p>${rows.length} item${rows.length !== 1 ? 's' : ''} · Total Qty ${totalQty > 0 ? totalQty.toLocaleString() : '—'}</p>
+      </div>
+      <button class="cat-date-popup-close" id="catDatePopupClose">✕</button>
+    </div>
+    <div class="cat-date-popup-body">${rowsHtml}</div>`;
+
+  // Position near anchor
+  const rect = anchorEl.getBoundingClientRect();
+  const pw = 300, ph = 360;
+  let top  = rect.bottom + 6;
+  let left = rect.left;
+  if(left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+  if(top  + ph > window.innerHeight - 12) top = rect.top - ph - 6;
+  popup.style.top  = top  + 'px';
+  popup.style.left = left + 'px';
+  popup.style.display = 'flex';
+
+  document.getElementById('catDatePopupClose').addEventListener('click', closeCatDatePopup);
+
+  // Link buttons → close catalogue, go to customer + highlight row
+  popup.querySelectorAll('.cat-date-popup-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cust = btn.dataset.cust;
+      const rowIdx = parseInt(btn.dataset.idx, 10);
+      // Close catalogue overlay and popup
+      document.getElementById('catalogueOverlay').style.display = 'none';
+      closeCatDatePopup();
+      // Navigate to customer
+      state.active = cust;
+      filterState = {};
+      colHiddenValues = {};
+      saveState();
+      renderAll();
+      // Scroll + highlight row
+      setTimeout(() => {
+        const tbody = document.getElementById('tbody');
+        if(!tbody) return;
+        const tr = tbody.querySelector(`tr[data-row-idx="${rowIdx}"]`);
+        if(tr){
+          tr.scrollIntoView({ behavior:'smooth', block:'center' });
+          tr.classList.remove('alert-highlight');
+          void tr.offsetWidth;
+          tr.classList.add('alert-highlight');
+          setTimeout(() => tr.classList.remove('alert-highlight'), 2200);
+        }
+      }, 80);
+    });
+  });
+
+  setTimeout(() => {
+    catDatePopupOutside = e => {
+      if(!popup.contains(e.target) && !anchorEl.contains(e.target)) closeCatDatePopup();
+    };
+    document.addEventListener('click', catDatePopupOutside);
+  }, 0);
+}
+
+
+function parseQty(v){
+  // Strip commas (thousands separator) before parsing, e.g. "2,200" → 2200
+  if(v === null || v === undefined || v === '') return 0;
+  return parseFloat(String(v).replace(/,/g, '')) || 0;
+}
+
+function monthKey(dateStr){
+  const d = parseDate(dateStr);
+  if(!d) return null;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function monthLabel(key){
+  if(!key) return '';
+  const [y, m] = key.split('-');
+  return `${THAI_MONTHS_SHORT[parseInt(m,10)-1]} ${parseInt(y,10)+543}`;
+}
+
+function buildCatalogueData(filterMonth){
+  const partMap = {};
+
+  state.customers.forEach(customer => {
+    (state.data[customer] || []).forEach(r => {
+      const part = (r.part || '').trim();
+      const mpn  = (r.mpn  || '').trim();
+      if(!part && !mpn) return;
+
+      // Month filter — use planDate, fallback to date
+      if(filterMonth){
+        const mk = monthKey(r.planDate || r.date || '');
+        if(mk !== filterMonth) return;
+      }
+
+      // Group key: MPN takes priority so same MPN merges across customers
+      const key = mpn || part;
+
+      if(!partMap[key]){
+        partMap[key] = {
+          key, mpn,
+          parts: new Set(part ? [part] : []),
+          customers: {},
+          colorIdx: Object.keys(partMap).length % STRIP_COLORS.length
+        };
+      } else {
+        if(part) partMap[key].parts.add(part);
+        if(mpn && !partMap[key].mpn) partMap[key].mpn = mpn;
+      }
+
+      const qty    = parseQty(r.qty);
+      const status = r.status || '';
+
+      if(!partMap[key].customers[customer])
+        partMap[key].customers[customer] = { qty: 0, qtyShipped: 0, qtyPending: 0, statuses: [], planDates: [], pos: [] };
+
+      const c = partMap[key].customers[customer];
+      c.qty += qty;
+      if(status === 'shipped') c.qtyShipped += qty;
+      if(status === 'pending') c.qtyPending += qty;
+      if(status && !c.statuses.includes(status)) c.statuses.push(status);
+      if(r.planDate && !c.planDates.includes(r.planDate)) c.planDates.push(r.planDate);
+      if(r.po && !c.pos.includes(r.po)) c.pos.push(r.po);
+    });
+  });
+
+  return Object.values(partMap).map(p => {
+    const totalQty     = Object.values(p.customers).reduce((s, c) => s + c.qty, 0);
+    const totalShipped = Object.values(p.customers).reduce((s, c) => s + c.qtyShipped, 0);
+    const totalPending = Object.values(p.customers).reduce((s, c) => s + c.qtyPending, 0);
+    const custCount    = Object.keys(p.customers).length;
+    const partList     = [...p.parts].join(', ');
+    const part = p.mpn || partList || p.key || '';
+    // Keep parts as array (Set doesn't survive spread into plain object)
+    return { ...p, parts: p.parts, part, partList, mpn: p.mpn || '', totalQty, totalShipped, totalPending, custCount };
+  });
+}
+
+function getAllMonths(){
+  // Collect all month keys from planDate/date across all customers
+  const months = new Set();
+  state.customers.forEach(customer => {
+    (state.data[customer] || []).forEach(r => {
+      const mk = monthKey(r.planDate || r.date || '');
+      if(mk) months.add(mk);
+    });
+  });
+  return [...months].sort();
+}
+
+function exportCatalogueByCustomer(parts, filterMonth, filterCustomer){
+  const wb = XLSX.utils.book_new();
+  const today = new Date();
+  const stamp = today.getFullYear() + '-' + pad2(today.getMonth()+1) + '-' + pad2(today.getDate());
+
+  const custList = filterCustomer
+    ? [filterCustomer]
+    : [...new Set(parts.flatMap(p => Object.keys(p.customers)))].sort();
+
+  // Helper: does row belong to one of the visible parts?
+  const rowMatchesPart = (r, p) => {
+    const rMpn  = (r.mpn  || '').trim();
+    const rPart = (r.part || '').trim();
+    return (rMpn && p.mpn && rMpn === p.mpn) ||
+           (p.parts && rPart && p.parts.has(rPart)) ||
+           (!p.mpn && rPart === p.partList);
+  };
+
+  // Collect all dates and months visible in selected data
+  const dateSet  = new Set();
+  const monthSet = new Set();
+  custList.forEach(cust => {
+    (state.data[cust] || []).forEach(r => {
+      if(!parts.some(p => rowMatchesPart(r, p))) return;
+      if(filterMonth && monthKey(r.planDate || r.date || '') !== filterMonth) return;
+      const dk = r.planDate || r.date || '';
+      if(dk){ dateSet.add(dk); const mk = monthKey(dk); if(mk) monthSet.add(mk); }
+    });
+  });
+  const allDates  = [...dateSet].sort();
+  const allMonths = [...monthSet].sort();
+
+  if(allDates.length === 0 && allMonths.length === 0){ showToast('No data to export'); return; }
+
+  const MONTH_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtM = mk => { const [y,m] = mk.split('-').map(Number); return `${MONTH_EN[(m||1)-1]} ${y}`; };
+
+  // ── Sheet 1: Summary (total per MPN per customer) ──
+  const sumHeader = ['MPN', 'Part No.', ...custList, 'Grand Total'];
+  const sumRows   = [];
+  parts.forEach(p => {
+    const custQtys = custList.map(cust => {
+      if(!p.customers[cust]) return '';
+      let sum = 0;
+      (state.data[cust] || []).forEach(r => {
+        if(!rowMatchesPart(r, p)) return;
+        if(filterMonth && monthKey(r.planDate || r.date || '') !== filterMonth) return;
+        sum += parseQty(r.qty);
+      });
+      return sum || '';
+    });
+    const total = custQtys.reduce((s,v) => s + (Number(v)||0), 0);
+    if(total > 0) sumRows.push([p.mpn||'', p.partList||'', ...custQtys, total]);
+  });
+  const grandSum = custList.map((_,i) => sumRows.reduce((s,r) => s+(Number(r[2+i])||0),0));
+  sumRows.push(['', 'GRAND TOTAL', ...grandSum, grandSum.reduce((s,v)=>s+v,0)]);
+  const wsSum = XLSX.utils.aoa_to_sheet([sumHeader, ...sumRows]);
+  wsSum['!cols'] = sumHeader.map((_,i) => ({wch: i<2?18:14}));
+  XLSX.utils.book_append_sheet(wb, wsSum, 'Summary');
+
+  // ── Sheet 2: Summary by Month (pivot MPN × Customer × Month) ──
+  if(!filterMonth && allMonths.length > 0){
+    const mHeader = ['MPN', 'Part No.', 'Customer', ...allMonths.map(fmtM), 'Total'];
+    const mRows   = [];
+    parts.forEach(p => {
+      const partTotals = {};
+      custList.forEach(cust => {
+        if(!p.customers[cust]) return;
+        const mqtys = allMonths.map(mk => {
+          let sum = 0;
+          (state.data[cust] || []).forEach(r => {
+            if(!rowMatchesPart(r, p)) return;
+            if(monthKey(r.planDate || r.date || '') === mk) sum += parseQty(r.qty);
+          });
+          return sum || '';
+        });
+        const total = mqtys.reduce((s,v) => s+(Number(v)||0), 0);
+        if(total > 0){
+          mRows.push([p.mpn||'', p.partList||'', cust, ...mqtys, total]);
+          allMonths.forEach((mk,i) => { partTotals[mk] = (partTotals[mk]||0)+(Number(mqtys[i])||0); });
+        }
+      });
+      if(custList.filter(c => p.customers[c]).length > 1){
+        const sub = allMonths.map(mk => partTotals[mk]||'');
+        const subTotal = sub.reduce((s,v)=>s+(Number(v)||0),0);
+        if(subTotal > 0) mRows.push([p.mpn||'', p.partList||'', '── Subtotal ──', ...sub, subTotal]);
+      }
+    });
+    const grandM = allMonths.map((_,i) =>
+      mRows.filter(r=>r[2]!=='── Subtotal ──').reduce((s,r)=>s+(Number(r[3+i])||0),0));
+    mRows.push(['','','GRAND TOTAL', ...grandM, grandM.reduce((s,v)=>s+v,0)]);
+    const wsM = XLSX.utils.aoa_to_sheet([mHeader, ...mRows]);
+    wsM['!cols'] = mHeader.map((_,i) => ({wch: i<3?18:14}));
+    XLSX.utils.book_append_sheet(wb, wsM, 'Summary by Month');
+  }
+
+  // ── Sheet 3: By Date (pivot MPN × Customer × Plan Date) ──
+  if(allDates.length > 0){
+    const dHeader = ['MPN', 'Part No.', 'Customer', ...allDates, 'Total'];
+    const dRows   = [];
+    parts.forEach(p => {
+      const partDateTotals = {};
+      custList.forEach(cust => {
+        if(!p.customers[cust]) return;
+        const dqtys = allDates.map(dk => {
+          let sum = 0;
+          (state.data[cust] || []).forEach(r => {
+            if(!rowMatchesPart(r, p)) return;
+            if(filterMonth && monthKey(r.planDate || r.date || '') !== filterMonth) return;
+            if((r.planDate || r.date || '') === dk) sum += parseQty(r.qty);
+          });
+          return sum || '';
+        });
+        const total = dqtys.reduce((s,v) => s+(Number(v)||0), 0);
+        if(total > 0){
+          dRows.push([p.mpn||'', p.partList||'', cust, ...dqtys, total]);
+          allDates.forEach((dk,i) => { partDateTotals[dk] = (partDateTotals[dk]||0)+(Number(dqtys[i])||0); });
+        }
+      });
+      if(custList.filter(c => p.customers[c]).length > 1){
+        const sub = allDates.map(dk => partDateTotals[dk]||'');
+        const subTotal = sub.reduce((s,v)=>s+(Number(v)||0),0);
+        if(subTotal > 0) dRows.push([p.mpn||'', p.partList||'', '── Subtotal ──', ...sub, subTotal]);
+      }
+    });
+    const grandD = allDates.map((_,i) =>
+      dRows.filter(r=>r[2]!=='── Subtotal ──').reduce((s,r)=>s+(Number(r[3+i])||0),0));
+    dRows.push(['','','GRAND TOTAL', ...grandD, grandD.reduce((s,v)=>s+v,0)]);
+    const wsD = XLSX.utils.aoa_to_sheet([dHeader, ...dRows]);
+    wsD['!cols'] = dHeader.map((_,i) => ({wch: i<3?18:12}));
+    XLSX.utils.book_append_sheet(wb, wsD, 'By Date');
+  }
+
+  const custSuffix  = filterCustomer ? `-${sanitizeSheetName(filterCustomer)}` : '-all-customers';
+  const monthSuffix = filterMonth ? `-${filterMonth}` : '';
+  XLSX.writeFile(wb, `catalogue-by-customer${custSuffix}${monthSuffix}-${stamp}.xlsx`);
+  showToast(`Exported ${wb.SheetNames.length} sheets`);
+}
+
+function exportCatalogue(parts, filterMonth){
+  const wb = XLSX.utils.book_new();
+  const today = new Date();
+  const stamp = today.getFullYear() + '-' + pad2(today.getMonth()+1) + '-' + pad2(today.getDate());
+  const allCustomers = [...new Set(parts.flatMap(p => Object.keys(p.customers)))].sort();
+
+  /* ── Sheet 1: Summary ── */
+  const summaryHeader = filterMonth
+    ? ['MPN', 'Part No.', 'Total Qty', 'Shipped', 'Pending', ...allCustomers]
+    : ['MPN', 'Part No.', 'Total Qty', 'Shipped', 'Pending', ...allCustomers];
+
+  const summaryRows = parts.map(p => {
+    const custQtys = allCustomers.map(c => p.customers[c] ? p.customers[c].qty : 0);
+    return [p.mpn||'', p.partList||'', p.totalQty, p.totalShipped, p.totalPending, ...custQtys];
+  });
+  const wsSummary = XLSX.utils.aoa_to_sheet([summaryHeader, ...summaryRows]);
+  wsSummary['!cols'] = summaryHeader.map((_, i) => ({ wch: i < 5 ? 18 : 14 }));
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+  /* ── Sheet 2: Detail ── */
+  // Collect all unique plan dates across filtered parts
+  const allDates = filterMonth
+    ? [...new Set(
+        parts.flatMap(p =>
+          Object.values(p.customers).flatMap(c => c.planDates || [])
+        )
+      )].sort()
+    : [];
+
+  /* ── Sheet 2: Detail ── */
+  if(filterMonth){
+    // Month selected → raw rows per shipment
+    const detailHeader = ['MPN', 'Part No.', 'Customer', 'PO', 'SO', 'DO',
+      'Plan Date', 'Ship Date', 'Ship Mode', 'Forwarder', 'Tracking', 'INV',
+      'Qty', 'Status', 'Noted'];
+    const detailRows = [];
+    state.customers.forEach(cust => {
+      (state.data[cust] || []).forEach(r => {
+        const rMpn  = (r.mpn  || '').trim();
+        const rPart = (r.part || '').trim();
+        const matchedPart = parts.find(p =>
+          (rMpn && p.mpn && rMpn === p.mpn) ||
+          (p.parts && rPart && p.parts.has(rPart)) ||
+          (!p.mpn && rPart === p.partList)
+        );
+        if(!matchedPart) return;
+        const mk = monthKey(r.planDate || r.date || '');
+        if(mk !== filterMonth) return;
+        detailRows.push([rMpn, rPart, cust,
+          r.po||'', r.so||'', r.do||'',
+          r.planDate||'', r.date||'', r.shipMode||'',
+          r.forwarder||'', r.tracking||'', r.inv||'',
+          r.qty||'', statusMeta(r.status).label.replace('— เลือกสถานะ —',''), r.note||'']);
+      });
+    });
+    const wsDetail = XLSX.utils.aoa_to_sheet([detailHeader, ...detailRows]);
+    wsDetail['!cols'] = detailHeader.map(() => ({wch: 18}));
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail');
+  } else {
+    // All mode → Sheet 2: Summary by Month (pivot MPN × Customer × Month)
+    const monthSet = new Set();
+    const dateSet  = new Set();
+    parts.forEach(p => {
+      Object.keys(p.customers).forEach(cust => {
+        (state.data[cust] || []).forEach(r => {
+          const rMpn  = (r.mpn  || '').trim();
+          const rPart = (r.part || '').trim();
+          const matches = (rMpn && p.mpn && rMpn === p.mpn) ||
+                          (p.parts && rPart && p.parts.has(rPart)) ||
+                          (!p.mpn && rPart === p.partList);
+          if(!matches) return;
+          const mk = monthKey(r.planDate || r.date || '');
+          if(mk) monthSet.add(mk);
+          const dk = r.planDate || r.date || '';
+          if(dk) dateSet.add(dk);
+        });
+      });
+    });
+    const months    = [...monthSet].sort();
+    const allDatesA = [...dateSet].sort();
+    const MONTH_EN  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmtM  = mk => { const [y,m] = mk.split('-').map(Number); return `${MONTH_EN[(m||1)-1]} ${y}`; };
+
+    // helper: match fn
+    const rowMatchesPart = (r, p) => {
+      const rMpn  = (r.mpn  || '').trim();
+      const rPart = (r.part || '').trim();
+      return (rMpn && p.mpn && rMpn === p.mpn) ||
+             (p.parts && rPart && p.parts.has(rPart)) ||
+             (!p.mpn && rPart === p.partList);
+    };
+
+    // ── Sheet 2: Summary by Month ──
+    const monthHeader = ['MPN', 'Part No.', 'Customer', ...months.map(fmtM), 'Total'];
+    const monthRows   = [];
+    parts.forEach(p => {
+      const custs = [...new Set(Object.keys(p.customers))].sort();
+      const partTotals = {};
+      custs.forEach(cust => {
+        const monthQtys = months.map(mk => {
+          let sum = 0;
+          (state.data[cust] || []).forEach(r => {
+            if(!rowMatchesPart(r, p)) return;
+            if(monthKey(r.planDate || r.date || '') === mk) sum += parseQty(r.qty);
+          });
+          return sum || '';
+        });
+        const total = monthQtys.reduce((s,v) => s + (Number(v)||0), 0);
+        if(total > 0){
+          monthRows.push([p.mpn||'', p.partList||'', cust, ...monthQtys, total]);
+          months.forEach((mk,i) => { partTotals[mk] = (partTotals[mk]||0) + (Number(monthQtys[i])||0); });
+        }
+      });
+      if(custs.length > 1){
+        const subVals = months.map(mk => partTotals[mk]||'');
+        const sub = subVals.reduce((s,v)=>s+(Number(v)||0),0);
+        if(sub > 0) monthRows.push([p.mpn||'', p.partList||'', '── Subtotal ──', ...subVals, sub]);
+      }
+    });
+    const grandM = months.map((_,i) =>
+      monthRows.filter(r => r[2] !== '── Subtotal ──').reduce((s,r)=>s+(Number(r[3+i])||0),0));
+    monthRows.push(['','','GRAND TOTAL', ...grandM, grandM.reduce((s,v)=>s+v,0)]);
+    const wsMonth = XLSX.utils.aoa_to_sheet([monthHeader, ...monthRows]);
+    wsMonth['!cols'] = monthHeader.map((_,i) => ({wch: i<3?18:14}));
+    XLSX.utils.book_append_sheet(wb, wsMonth, 'Summary by Month');
+
+    // ── Sheet 3: By Date (pivot MPN × Customer × Plan Date) ──
+    if(allDatesA.length > 0){
+      const dateHeader = ['MPN', 'Part No.', 'Customer', ...allDatesA, 'Total'];
+      const dateRows   = [];
+      parts.forEach(p => {
+        const custs = [...new Set(Object.keys(p.customers))].sort();
+        const partDateTotals = {};
+        custs.forEach(cust => {
+          const dateQtys = allDatesA.map(dk => {
+            let sum = 0;
+            (state.data[cust] || []).forEach(r => {
+              if(!rowMatchesPart(r, p)) return;
+              if((r.planDate || r.date || '') === dk) sum += parseQty(r.qty);
+            });
+            return sum || '';
+          });
+          const total = dateQtys.reduce((s,v) => s + (Number(v)||0), 0);
+          if(total > 0){
+            dateRows.push([p.mpn||'', p.partList||'', cust, ...dateQtys, total]);
+            allDatesA.forEach((dk,i) => { partDateTotals[dk] = (partDateTotals[dk]||0) + (Number(dateQtys[i])||0); });
+          }
+        });
+        if(custs.length > 1){
+          const subVals = allDatesA.map(dk => partDateTotals[dk]||'');
+          const sub = subVals.reduce((s,v)=>s+(Number(v)||0),0);
+          if(sub > 0) dateRows.push([p.mpn||'', p.partList||'', '── Subtotal ──', ...subVals, sub]);
+        }
+      });
+      const grandD = allDatesA.map((_,i) =>
+        dateRows.filter(r => r[2] !== '── Subtotal ──').reduce((s,r)=>s+(Number(r[3+i])||0),0));
+      dateRows.push(['','','GRAND TOTAL', ...grandD, grandD.reduce((s,v)=>s+v,0)]);
+      const wsDate = XLSX.utils.aoa_to_sheet([dateHeader, ...dateRows]);
+      wsDate['!cols'] = dateHeader.map((_,i) => ({wch: i<3?18:12}));
+      XLSX.utils.book_append_sheet(wb, wsDate, 'By Date');
+    }
+  }
+
+  /* ── Sheet 3 (month mode only): By Date pivot ── */
+  if(filterMonth && allDates.length > 0){
+    const pivotHeader = ['MPN', 'Part No.', 'Customer', ...allDates];
+    const pivotRows = [];
+    parts.forEach(p => {
+      Object.entries(p.customers).sort((a,b) => a[0].localeCompare(b[0])).forEach(([cust]) => {
+        const dateCols = allDates.map(dateStr => {
+          let dQty = 0;
+          (state.data[cust] || []).forEach(r => {
+            if((r.planDate || '') !== dateStr) return;
+            const rMpn  = (r.mpn  || '').trim();
+            const rPart = (r.part || '').trim();
+            if(rMpn === (p.mpn||'') || (p.parts && p.parts.has(rPart)) || (!p.mpn && rPart === p.partList))
+              dQty += parseQty(r.qty);
+          });
+          return dQty || '';
+        });
+        pivotRows.push([p.mpn||'', p.partList||'', cust, ...dateCols]);
+      });
+    });
+    const wsPivot = XLSX.utils.aoa_to_sheet([pivotHeader, ...pivotRows]);
+    wsPivot['!cols'] = pivotHeader.map(() => ({ wch: 16 }));
+    XLSX.utils.book_append_sheet(wb, wsPivot, 'By Date');
+  }
+
+  const suffix = filterMonth ? `-${filterMonth}` : '';
+  XLSX.writeFile(wb, `part-catalogue${suffix}-${stamp}.xlsx`);
+  showToast('Exported Part Catalogue');
+}
+
+function buildPartGroupedCards(parts, filterMonth){
+  if(parts.length === 0) return `<div class="cat-empty">No parts found</div>`;
+  return parts.map(p => {
+    const strip = STRIP_COLORS[p.colorIdx];
+    const custRows = Object.entries(p.customers)
+      .sort((a,b) => a[0].localeCompare(b[0], 'en', {sensitivity:'base'}))
+      .map(([name, info]) => {
+        const badges = [];
+        if(info.qtyShipped > 0) badges.push(`<span class="cat-pill cat-pill-shipped">Shipped ${info.qtyShipped.toLocaleString()}</span>`);
+        if(info.qtyPending > 0) badges.push(`<span class="cat-pill cat-pill-pending">Pending ${info.qtyPending.toLocaleString()}</span>`);
+        const other = info.qty - info.qtyShipped - info.qtyPending;
+        if(other > 0) badges.push(`<span class="cat-pill" style="background:#F3F5F8;color:var(--muted);">No Status ${other.toLocaleString()}</span>`);
+        const dateLine = (filterMonth && info.planDates.length > 0)
+          ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;">${
+              info.planDates.sort().map(d => {
+                const pd = parseDate(d);
+                const dayNum = pd ? pd.getDate() : d;
+                return `<span class="cat-date-chip" data-date="${escapeAttr(d)}" data-customer="${escapeAttr(name)}" title="View items on ${formatThaiDate(d)}">📅 ${dayNum}</span>`;
+              }).join(' ')
+            }</div>`
+          : '';
+        return `
+          <div class="cat-cust-row">
+            <div style="flex:1;min-width:0;">
+              <div class="cat-cust-name">${escapeHtml(name)}</div>
+              ${badges.length ? `<div class="cat-pills">${badges.join('')}</div>` : ''}
+              ${dateLine}
+            </div>
+            <span class="cat-cust-qty">${info.qty > 0 ? info.qty.toLocaleString() : '—'}</span>
+          </div>`;
+      }).join('');
+
+    const qtyDisplay = p.totalQty > 0 ? p.totalQty.toLocaleString() : '—';
+    const custLabel  = p.custCount === 1 ? '1 customer' : `${p.custCount} customers`;
+    const shippedTotal = p.totalShipped > 0 ? `<span class="cat-pill cat-pill-shipped" style="font-size:11px;padding:3px 8px;">Shipped ${p.totalShipped.toLocaleString()}</span>` : '';
+    const pendingTotal = p.totalPending > 0 ? `<span class="cat-pill cat-pill-pending" style="font-size:11px;padding:3px 8px;">Pending ${p.totalPending.toLocaleString()}</span>` : '';
+
+    return `
+      <div class="cat-card" data-key="${escapeAttr(p.key)}">
+        <input type="checkbox" class="cat-card-checkbox" data-key="${escapeAttr(p.key)}" title="เลือก MPN นี้">
+        <div class="cat-color-strip" style="background:${strip};"></div>
+        <div class="cat-card-head">
+          <div>
+            <div class="cat-part-name">${escapeHtml(p.mpn || p.partList)}</div>
+            ${p.mpn && p.partList ? `<div class="cat-mpn">PN: ${escapeHtml(p.partList)}</div>` : ''}
+          </div>
+          <div style="text-align:right;">
+            <div class="cat-qty-badge">Qty ${qtyDisplay}</div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:4px;font-family:var(--mono);">${custLabel}</div>
+          </div>
+        </div>
+        <div class="cat-customers">${custRows}</div>
+        ${(shippedTotal || pendingTotal) ? `<div class="cat-card-foot" style="border-top:1px solid var(--border);gap:6px;">${shippedTotal}${pendingTotal}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function buildCustomerGroupedCards(parts, filterMonth){
+  // Re-pivot: group by customer name, list each MPN/Part as a detail row
+  const custMap = {};
+  parts.forEach(p => {
+    Object.entries(p.customers).forEach(([custName, info]) => {
+      if(!custMap[custName]){
+        custMap[custName] = {
+          name: custName,
+          totalQty: 0, totalShipped: 0, totalPending: 0,
+          mpnCount: 0,
+          items: [],
+          colorIdx: Object.keys(custMap).length % STRIP_COLORS.length
+        };
+      }
+      const c = custMap[custName];
+      c.totalQty     += info.qty;
+      c.totalShipped += info.qtyShipped;
+      c.totalPending += info.qtyPending;
+      c.mpnCount++;
+      c.items.push({
+        key: p.key, mpn: p.mpn, partList: p.partList,
+        qty: info.qty, qtyShipped: info.qtyShipped, qtyPending: info.qtyPending,
+        planDates: info.planDates || []
+      });
+    });
+  });
+
+  const customers = Object.values(custMap).sort((a,b) => a.name.localeCompare(b.name, 'en', {sensitivity:'base'}));
+  if(customers.length === 0) return `<div class="cat-empty">No customers found</div>`;
+
+  return customers.map(c => {
+    const strip = STRIP_COLORS[c.colorIdx];
+    const itemRows = c.items
+      .sort((a,b) => (a.mpn || a.partList).localeCompare(b.mpn || b.partList, 'en', {sensitivity:'base'}))
+      .map(item => {
+        const badges = [];
+        if(item.qtyShipped > 0) badges.push(`<span class="cat-pill cat-pill-shipped">Shipped ${item.qtyShipped.toLocaleString()}</span>`);
+        if(item.qtyPending > 0) badges.push(`<span class="cat-pill cat-pill-pending">Pending ${item.qtyPending.toLocaleString()}</span>`);
+        const other = item.qty - item.qtyShipped - item.qtyPending;
+        if(other > 0) badges.push(`<span class="cat-pill" style="background:#F3F5F8;color:var(--muted);">No Status ${other.toLocaleString()}</span>`);
+        const dateLine = (filterMonth && item.planDates.length > 0)
+          ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;">${
+              item.planDates.sort().map(d => {
+                const pd = parseDate(d);
+                const dayNum = pd ? pd.getDate() : d;
+                return `<span class="cat-date-chip" data-date="${escapeAttr(d)}" data-customer="${escapeAttr(c.name)}" title="View items on ${formatThaiDate(d)}">📅 ${dayNum}</span>`;
+              }).join(' ')
+            }</div>`
+          : '';
+        const mpnDisplay = item.mpn || item.partList;
+        const pnLine = item.mpn && item.partList ? ` <span style="font-weight:400;color:var(--muted);font-size:10.5px;">(PN: ${escapeHtml(item.partList)})</span>` : '';
+        return `
+          <div class="cat-cust-row">
+            <div style="flex:1;min-width:0;">
+              <div class="cat-cust-name">${escapeHtml(mpnDisplay)}${pnLine}</div>
+              ${badges.length ? `<div class="cat-pills">${badges.join('')}</div>` : ''}
+              ${dateLine}
+            </div>
+            <span class="cat-cust-qty">${item.qty > 0 ? item.qty.toLocaleString() : '—'}</span>
+          </div>`;
+      }).join('');
+
+    const qtyDisplay = c.totalQty > 0 ? c.totalQty.toLocaleString() : '—';
+    const mpnLabel = c.mpnCount === 1 ? '1 MPN' : `${c.mpnCount} MPNs`;
+    const shippedTotal = c.totalShipped > 0 ? `<span class="cat-pill cat-pill-shipped" style="font-size:11px;padding:3px 8px;">Shipped ${c.totalShipped.toLocaleString()}</span>` : '';
+    const pendingTotal = c.totalPending > 0 ? `<span class="cat-pill cat-pill-pending" style="font-size:11px;padding:3px 8px;">Pending ${c.totalPending.toLocaleString()}</span>` : '';
+
+    return `
+      <div class="cat-card" data-customer-key="${escapeAttr(c.name)}">
+        <div class="cat-color-strip" style="background:${strip};"></div>
+        <div class="cat-card-head">
+          <div>
+            <div class="cat-part-name">${escapeHtml(c.name)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="cat-qty-badge">Qty ${qtyDisplay}</div>
+            <div style="font-size:10.5px;color:var(--muted);margin-top:4px;font-family:var(--mono);">${mpnLabel}</div>
+          </div>
+        </div>
+        <div class="cat-customers">${itemRows}</div>
+        ${(shippedTotal || pendingTotal) ? `<div class="cat-card-foot" style="border-top:1px solid var(--border);gap:6px;">${shippedTotal}${pendingTotal}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function renderCatalogue(search = '', sortBy = 'part', filterMonth = '', filterCustomer = ''){
+  const overlay = document.getElementById('catalogueOverlay');
+  const allParts = buildCatalogueData(filterMonth);
+  const allMonths = getAllMonths();
+
+  // Filter by search
+  const sq = search.toLowerCase();
+  let parts = sq
+    ? allParts.filter(p => (p.part||'').toLowerCase().includes(sq) || (p.mpn||'').toLowerCase().includes(sq)
+        || (p.partList||'').toLowerCase().includes(sq)
+        || Object.keys(p.customers).some(c => c.toLowerCase().includes(sq)))
+    : allParts;
+
+  // Filter by customer — keep only that customer's data per card
+  if(filterCustomer){
+    parts = parts
+      .map(p => {
+        if(!p.customers[filterCustomer]) return null;
+        const info = p.customers[filterCustomer];
+        return {
+          ...p,
+          customers:    { [filterCustomer]: info },
+          totalQty:     info.qty,
+          totalShipped: info.qtyShipped,
+          totalPending: info.qtyPending,
+          custCount:    1
+        };
+      })
+      .filter(Boolean);
+  }
+
+  // Sort
+  if(sortBy === 'qty') parts.sort((a,b) => b.totalQty - a.totalQty);
+  else if(sortBy === 'customers') parts.sort((a,b) => b.custCount - a.custCount);
+  else parts.sort((a,b) => a.part.localeCompare(b.part, 'en', {sensitivity:'base'}));
+
+  const totalParts     = allParts.length;
+  const totalCustomers = new Set(allParts.flatMap(p => Object.keys(p.customers))).size;
+  const totalQtyFiltered = allParts.reduce((s,p) => s + p.totalQty, 0);
+
+  // Month pills
+  const monthPillsHtml = allMonths.map(mk => `
+    <button class="cat-month-pill ${mk === filterMonth ? 'active' : ''}" data-month="${mk}">
+      ${monthLabel(mk)}
+    </button>`).join('');
+
+  const cardsHtml = sortBy === 'customers'
+    ? buildCustomerGroupedCards(parts, filterMonth)
+    : buildPartGroupedCards(parts, filterMonth);
+
+  overlay.innerHTML = `
+    <div class="catalogue-shell">
+      <div class="catalogue-head">
+        <div>
+          <h2>📊 Part Catalogue</h2>
+          <p>Summary across all sheets · all customers${filterMonth ? ` · ${monthLabel(filterMonth)}` : ''}</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="cat-close-btn" style="background:rgba(255,255,255,.1);padding:8px 14px;font-size:12.5px;border-radius:8px;" id="catExportCustBtn">⬇ Export by Customer</button>
+          ${sortBy !== 'customers' ? `<button class="cat-close-btn" style="background:rgba(255,255,255,.1);padding:8px 14px;font-size:12.5px;border-radius:8px;" id="catExportBtn">⬇ Export MPN</button>` : ''}
+          <button class="cat-close-btn" id="catCloseBtn">✕ Close</button>
+        </div>
+      </div>
+      <div class="cat-export-bar" id="catExportBar">
+        <div class="cat-export-bar-label"><strong id="catSelectedCount">0</strong> MPN selected</div>
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.2);font-size:12px;" id="catSelectAll">Select All</button>
+        <button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.2);font-size:12px;" id="catSelectNone">Clear</button>
+        <button class="btn btn-accent btn-sm" style="font-size:12px;" id="catExportSelected">⬇ Export Selected</button>
+        <button class="btn btn-ghost btn-sm" style="color:#A9B4C9;border-color:rgba(255,255,255,.1);font-size:12px;" id="catCancelSelect">Cancel</button>
+      </div>
+      <div class="cat-summary-bar">
+        <div class="cat-stat"><span class="cat-stat-val">${totalParts.toLocaleString()}</span><span class="cat-stat-lbl">Total Parts</span></div>
+        <div class="cat-stat"><span class="cat-stat-val">${totalQtyFiltered > 0 ? totalQtyFiltered.toLocaleString() : '—'}</span><span class="cat-stat-lbl">Total Qty${filterMonth ? ' (filtered)' : ''}</span></div>
+        <div class="cat-stat"><span class="cat-stat-val">${totalCustomers.toLocaleString()}</span><span class="cat-stat-lbl">Customers</span></div>
+      </div>
+      ${allMonths.length > 0 ? `
+      <div class="cat-month-bar">
+        <button class="cat-month-pill ${!filterMonth ? 'active' : ''}" data-month="">All</button>
+        ${monthPillsHtml}
+      </div>` : ''}
+      <div class="catalogue-controls">
+        <input type="text" class="catalogue-search" id="catSearch" placeholder="🔍 Search Part No., MPN, Customer..." value="${escapeAttr(search)}">
+        <select class="catalogue-sort" id="catCustFilter">
+          <option value="">All Customers</option>
+          ${state.customers.map(c => `<option value="${escapeAttr(c)}" ${c===filterCustomer?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+        </select>
+        <select class="catalogue-sort" id="catSort">
+          <option value="part"      ${sortBy==='part'?'selected':''}>Sort by Part No.</option>
+          <option value="qty"       ${sortBy==='qty'?'selected':''}>Sort by Qty (High→Low)</option>
+          <option value="customers" ${sortBy==='customers'?'selected':''}>Sort by Customers</option>
+        </select>
+      </div>
+      <div class="catalogue-grid">${cardsHtml}</div>
+    </div>`;
+
+  overlay.style.display = 'block';
+
+  document.getElementById('catCloseBtn').addEventListener('click', () => { overlay.style.display='none'; closeCatDatePopup(); });
+  document.getElementById('catExportBtn')?.addEventListener('click', () => enterCatSelectMode(overlay, parts, filterMonth));
+  document.getElementById('catExportCustBtn').addEventListener('click', () => {
+    const cust = document.getElementById('catCustFilter')?.value || '';
+    exportCatalogueByCustomer(parts, filterMonth, cust);
+  });
+  overlay.addEventListener('click', e => { if(e.target === overlay){ overlay.style.display='none'; closeCatDatePopup(); } });
+
+  // Wire date chip clicks
+  overlay.querySelectorAll('.cat-date-chip').forEach(chip => {
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      openCatDatePopup(chip.dataset.date, chip.dataset.customer, chip);
+    });
+  });
+
+  overlay.querySelectorAll('.cat-month-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s  = document.getElementById('catSearch')?.value || '';
+      const so = document.getElementById('catSort')?.value || 'part';
+      const fc = document.getElementById('catCustFilter')?.value || '';
+      renderCatalogue(s, so, btn.dataset.month, fc);
+    });
+  });
+
+  const searchEl = document.getElementById('catSearch');
+  const sortEl   = document.getElementById('catSort');
+  const custEl   = document.getElementById('catCustFilter');
+  let searchTimer;
+  searchEl.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => renderCatalogue(searchEl.value, sortEl.value, filterMonth, custEl?.value||''), 250);
+  });
+  sortEl.addEventListener('change', () => renderCatalogue(searchEl.value, sortEl.value, filterMonth, custEl?.value||''));
+  custEl?.addEventListener('change', () => renderCatalogue(searchEl.value, sortEl.value, filterMonth, custEl.value));
+
+  searchEl.focus();
+}
+
+function enterCatSelectMode(overlay, parts, filterMonth){
+  const grid    = overlay.querySelector('.catalogue-grid');
+  const bar     = document.getElementById('catExportBar');
+  const counter = document.getElementById('catSelectedCount');
+  if(!grid) return;
+
+  grid.classList.add('cat-select-mode');
+  bar.classList.add('show');
+  document.getElementById('catExportBtn').style.display = 'none';
+
+  function updateCount(){
+    const n = grid.querySelectorAll('.cat-card.selected').length;
+    counter.textContent = n;
+    document.getElementById('catExportSelected').disabled = n === 0;
+  }
+
+  // Click card → toggle selection
+  grid.querySelectorAll('.cat-card').forEach(card => {
+    const chk = card.querySelector('.cat-card-checkbox');
+    if(!chk) return; // customer-grouped cards have no checkbox / not selectable for export
+    const toggle = () => {
+      card.classList.toggle('selected');
+      chk.checked = card.classList.contains('selected');
+      updateCount();
+    };
+    card.addEventListener('click', toggle);
+    chk.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+  });
+
+  document.getElementById('catSelectAll').addEventListener('click', () => {
+    grid.querySelectorAll('.cat-card').forEach(c => {
+      c.classList.add('selected');
+      c.querySelector('.cat-card-checkbox').checked = true;
+    });
+    updateCount();
+  });
+
+  document.getElementById('catSelectNone').addEventListener('click', () => {
+    grid.querySelectorAll('.cat-card').forEach(c => {
+      c.classList.remove('selected');
+      c.querySelector('.cat-card-checkbox').checked = false;
+    });
+    updateCount();
+  });
+
+  document.getElementById('catExportSelected').addEventListener('click', () => {
+    const selectedKeys = new Set(
+      [...grid.querySelectorAll('.cat-card.selected')].map(c => c.dataset.key)
+    );
+    const selectedParts = parts.filter(p => selectedKeys.has(p.key));
+    if(selectedParts.length === 0) return;
+    exportCatalogue(selectedParts, filterMonth);
+    exitCatSelectMode(overlay);
+  });
+
+  document.getElementById('catCancelSelect').addEventListener('click', () => exitCatSelectMode(overlay));
+}
+
+function exitCatSelectMode(overlay){
+  const grid = overlay?.querySelector('.catalogue-grid');
+  if(!grid) return;
+  grid.classList.remove('cat-select-mode');
+  grid.querySelectorAll('.cat-card').forEach(c => {
+    c.classList.remove('selected');
+    const chk = c.querySelector('.cat-card-checkbox');
+    if(chk) chk.checked = false;
+  });
+  document.getElementById('catExportBar')?.classList.remove('show');
+  const btn = document.getElementById('catExportBtn');
+  if(btn) btn.style.display = '';
+}
+
+document.getElementById('catalogueBtn')?.addEventListener('click', () => renderCatalogue());
+
+function renderAll(){
+  renderTabs();
+  renderCard();
+  renderAlerts();
+}
+
+function parseDate(str){
+  if(!str) return null;
+  const d = new Date(str + 'T00:00:00');
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function daysBetween(a, b){
+  const MS = 24 * 60 * 60 * 1000;
+  return Math.round((b - a) / MS);
+}
+
+function computeAlerts(){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const alerts = [];
+  state.customers.forEach(customer => {
+    (state.data[customer] || []).forEach((r, idx) => {
+      if(!r.planDate) return;
+      if(r.status === 'shipped') return;
+      const plan = parseDate(r.planDate);
+      if(!plan) return;
+      const diff = daysBetween(today, plan);
+      if(diff <= 3){
+        alerts.push({ customer, idx, planDate: r.planDate, part: r.part, po: r.po, diff });
+      }
+    });
+  });
+  // overdue first, then soonest
+  alerts.sort((a, b) => a.diff - b.diff);
+  return alerts;
+}
+
+function formatThaiDate(str){
+  const d = parseDate(str);
+  if(!d) return str;
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+}
+
+/* ============================================================
+   📋 DAY SUMMARY — click a Plan Date cell to see all items
+   shipping that day across all customers
+   ============================================================ */
+
+let dayPopupOutside = null;
+
+function buildDaySummary(dateStr){
+  // Collect all rows (all customers) with matching planDate
+  const items = [];
+  state.customers.forEach(customer => {
+    (state.data[customer] || []).forEach((r, idx) => {
+      if((r.planDate || '') === dateStr){
+        items.push({ customer, idx, r });
+      }
+    });
+  });
+  return items;
+}
+
+function openDaySummary(dateStr, anchorEl){
+  const popup = document.getElementById('daySummaryPopup');
+  if(!dateStr){ popup.style.display = 'none'; return; }
+
+  const items = buildDaySummary(dateStr);
+  if(items.length === 0){ popup.style.display = 'none'; return; }
+
+  const totalQty = items.reduce((s, {r}) => s + (parseQty(r.qty)), 0);
+  const dateDisplay = formatThaiDate(dateStr);
+
+  const rowsHtml = items.map(({customer, idx, r}, i) => {
+    const color = STRIP_COLORS[i % STRIP_COLORS.length];
+    const qty   = parseQty(r.qty);
+    const statusHtml = r.status === 'shipped'
+      ? `<span class="day-popup-status shipped">ส่งแล้ว</span>`
+      : r.status === 'pending'
+      ? `<span class="day-popup-status pending">รอจัดส่ง</span>` : '';
+    const meta = [customer, r.po ? `PO ${r.po}` : '', r.forwarder || ''].filter(Boolean).join(' · ');
+    return `
+      <div class="day-popup-row">
+        <div class="day-popup-dot" style="background:${color};"></div>
+        <div class="day-popup-info">
+          <div class="day-popup-pn">${escapeHtml(r.part || '—')}${r.mpn ? ` <span style="font-weight:400;color:var(--muted);">(${escapeHtml(r.mpn)})</span>` : ''}</div>
+          <div class="day-popup-meta">${escapeHtml(meta)}</div>
+          ${statusHtml}
+        </div>
+        <div class="day-popup-qty">${qty > 0 ? qty.toLocaleString() : '—'}</div>
+      </div>`;
+  }).join('');
+
+  popup.innerHTML = `
+    <div class="day-popup-head">
+      <div>
+        <h4>📋 ${dateDisplay}</h4>
+        <p>${items.length} รายการ · วันที่ Plan จัดส่ง</p>
+      </div>
+      <button class="day-popup-close" id="dayPopupClose">✕</button>
+    </div>
+    <div class="day-popup-body">
+      <div class="day-popup-total">
+        <span>รวม Q'ty ทั้งหมด</span>
+        <strong>${totalQty > 0 ? totalQty.toLocaleString() : '—'}</strong>
+      </div>
+      ${rowsHtml}
+    </div>`;
+
+  // Position near the anchor
+  const rect = anchorEl.getBoundingClientRect();
+  const popW = 340, popH = 400;
+  let top  = rect.bottom + 8;
+  let left = rect.left;
+  if(left + popW > window.innerWidth - 12) left = window.innerWidth - popW - 12;
+  if(top + popH  > window.innerHeight - 12) top  = rect.top - popH - 8;
+  popup.style.top  = top  + 'px';
+  popup.style.left = left + 'px';
+  popup.style.display = 'flex';
+
+  document.getElementById('dayPopupClose').addEventListener('click', () => {
+    popup.style.display = 'none';
+    document.removeEventListener('click', dayPopupOutside);
+  });
+
+  // Close when clicking outside
+  if(dayPopupOutside) document.removeEventListener('click', dayPopupOutside);
+  dayPopupOutside = e => {
+    if(!popup.contains(e.target) && !anchorEl.contains(e.target)){
+      popup.style.display = 'none';
+      document.removeEventListener('click', dayPopupOutside);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', dayPopupOutside), 0);
+}
+
+function renderAlerts(){
+  const banner = document.getElementById('alertBanner');
+  const alerts = computeAlerts();
+  if(alerts.length === 0){ banner.innerHTML = ''; return; }
+  const hasOverdue = alerts.some(a => a.diff < 0);
+  const itemsHtml = alerts.map(a => {
+    const overdue = a.diff < 0;
+    const badge = overdue ? `เลยกำหนด ${Math.abs(a.diff)} วัน` : (a.diff === 0 ? 'วันนี้' : `อีก ${a.diff} วัน`);
+    const partLabel = a.part ? `Part No. ${escapeHtml(a.part)}` : 'ไม่มี Part No.';
+    const poLabel = a.po ? ` · PO ${escapeHtml(a.po)}` : '';
+    return `
+      <div class="alert-item ${overdue ? 'overdue' : ''}"
+           data-customer="${escapeAttr(a.customer)}"
+           data-row-idx="${a.idx}">
+        <span class="alert-badge">${badge}</span>
+        <span class="alert-cust">${escapeHtml(a.customer)}</span>
+        <span class="alert-meta">${partLabel}${poLabel} · Plan ${formatThaiDate(a.planDate)}</span>
+        <button class="alert-link">ไปที่รายการนี้ ↗</button>
+      </div>`;
+  }).join('');
+
+  banner.innerHTML = `
+    <div class="alert-banner ${hasOverdue ? 'has-overdue' : ''}">
+      <div class="alert-banner-head"><span>⏰</span><span>แจ้งเตือน: มีรายการที่ใกล้ถึงวัน Plan จัดส่ง (ภายใน 3 วัน)</span></div>
+      <div class="alert-list">${itemsHtml}</div>
+    </div>`;
+
+  banner.querySelectorAll('.alert-item').forEach(el => {
+    el.querySelector('.alert-link').addEventListener('click', () => {
+      const customer = el.dataset.customer;
+      const rowIdx   = parseInt(el.dataset.rowIdx, 10);
+
+      if(state.active !== customer){
+        state.active = customer;
+        filterState = {};
+        colHiddenValues = {};
+        saveState();
+        renderAll();
+      }
+
+      // After render, find exact tr by data-row-idx and scroll+highlight
+      setTimeout(() => {
+        const tbody = document.getElementById('tbody');
+        if(!tbody) return;
+        const targetTr = tbody.querySelector(`tr[data-row-idx="${rowIdx}"]`);
+        if(targetTr){
+          targetTr.scrollIntoView({ behavior:'smooth', block:'center' });
+          targetTr.classList.remove('alert-highlight');
+          void targetTr.offsetWidth;
+          targetTr.classList.add('alert-highlight');
+          setTimeout(() => targetTr.classList.remove('alert-highlight'), 2200);
+        }
+      }, 80);
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){
+  return escapeHtml(s || '');
+}
+
+/* ---------- Export ---------- */
+function buildSheetData(customerName){
+  const rows = state.data[customerName] || [];
+  const data = [['Part No.', 'MPN', 'เลข PO', "Q'ty", 'SO', 'DO', 'วันที่ Plan จัดส่ง', 'วันที่จัดส่ง', 'Ship Mode', 'Forwarder', 'เลข Tracking', 'INV', 'Status', 'Noted']];
+  rows.forEach(r => {
+    if(rowHasData(r)){
+      data.push([
+        r.part || '',
+        r.mpn || '',
+        r.po || '',
+        r.qty || '',
+        r.so || '',
+        r.do || '',
+        r.planDate || '',
+        r.date || '',
+        r.shipMode || '',
+        r.forwarder || '',
+        r.tracking || '',
+        r.inv || '',
+        statusMeta(r.status).label.replace('— เลือกสถานะ —', ''),
+        r.note || ''
+      ]);
+    }
+  });
+  if(data.length === 1) data.push(data[0].map(() => ''));
+  return data;
+}
+
+function sanitizeSheetName(name){
+  let n = name.replace(/[\\\/\?\*\[\]:]/g, ' ').trim();
+  if(n.length > 31) n = n.substring(0, 31);
+  return n || 'Sheet';
+}
+
+function exportExcel(all){
+  const wb = XLSX.utils.book_new();
+  const usedNames = new Set();
+
+  const targets = all ? state.customers : [state.active];
+  targets.forEach(name => {
+    const ws = XLSX.utils.aoa_to_sheet(buildSheetData(name));
+    ws['!cols'] = COLUMN_WIDTHS_EXPORT;
+    let sheetName = sanitizeSheetName(name);
+    let finalName = sheetName;
+    let i = 2;
+    while(usedNames.has(finalName)){
+      finalName = sanitizeSheetName(sheetName + ' ' + i);
+      i++;
+    }
+    usedNames.add(finalName);
+    XLSX.utils.book_append_sheet(wb, ws, finalName);
+  });
+
+  const today = new Date();
+  const stamp = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const filename = all
+    ? `shipment-records-all-${stamp}.xlsx`
+    : `shipment-records-${sanitizeSheetName(state.active)}-${stamp}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
+  showToast('Export สำเร็จ: ' + filename);
+}
+
+document.getElementById('exportAllBtn').addEventListener('click', () => exportExcel(true));
+
+/* ============================================================
+   🔄 UPDATE BY PO
+   Matches incoming rows by PO, updates SO / DO / INV / and
+   other selected fields only — leaves unmatched rows untouched.
+   ============================================================ */
+
+// Fields the user can choose to update (PO is the key, not updatable)
+const UPDATE_FIELDS = [
+  { field:'so',       label:'SO' },
+  { field:'do',       label:'DO' },
+  { field:'inv',      label:'INV' },
+  { field:'tracking', label:'Tracking' },
+  { field:'date',     label:'วันที่จัดส่ง' },
+  { field:'shipMode', label:'Ship Mode' },
+  { field:'forwarder',label:'Forwarder' },
+  { field:'status',   label:'Status' },
+  { field:'note',     label:'Noted' },
+];
+
+// Header aliases for the PO-update upload (PO is mandatory key)
+const UPDATE_HEADER_MAP = {
+  'เลข po':'po','po':'po','po no.':'po','po no':'po',
+  'so':'so','เลข so':'so','so no.':'so',
+  'do':'do','เลข do':'do','do no.':'do',
+  'inv':'inv','invoice':'inv','inv no.':'inv','invoice no.':'inv',
+  "q'ty":'qty','qty':'qty','quantity':'qty','จำนวน':'qty',
+  'เลข tracking':'tracking','tracking':'tracking','tracking no.':'tracking','tracking no':'tracking',
+  'วันที่จัดส่ง':'date','ship date':'date','shipping date':'date','date':'date',
+  'ship mode':'shipMode','shipmode':'shipMode',
+  'forwarder':'forwarder','fwd':'forwarder',
+  'status':'status','สถานะ':'status',
+  'noted':'note','note':'note','notes':'note','หมายเหตุ':'note','remark':'note',
+};
+
+let pendingPoUpdate = null;  // { incomingRows, scopeFields }
+
+function parsePoUpdateSheet(ws){
+  const arrStr = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+  const arrRaw = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+  if(arrStr.length < 2) return [];
+  // Build column map
+  const headerRow = arrStr[0];
+  const colMap = {};
+  headerRow.forEach((h, i) => {
+    const key = UPDATE_HEADER_MAP[normHeader(h)];
+    if(key) colMap[key] = i;
+  });
+  const rows = [];
+  for(let i = 1; i < arrStr.length; i++){
+    const s = arrStr[i]; const raw = arrRaw[i] || [];
+    const po = s[colMap['po'] ?? -1];
+    if(!po || String(po).trim() === '') continue;
+    const row = { po: String(po).trim() };
+
+    // ── Tiebreaker key fields (always read, not updatable) ──
+    // Use raw number for qty to avoid string/number mismatch
+    ['qty','so','do','inv'].forEach(key => {
+      const ci = colMap[key];
+      if(ci === undefined) return;
+      if(key === 'qty'){
+        const rawVal = raw[ci];
+        row[key] = (rawVal !== undefined && rawVal !== '') ? String(rawVal).trim() : String(s[ci] ?? '').trim();
+      } else {
+        row[key] = String(s[ci] ?? '').trim();
+      }
+    });
+
+    // ── Updatable fields ──
+    UPDATE_FIELDS.forEach(({field}) => {
+      const ci = colMap[field];
+      if(ci === undefined) return;
+      if(field === 'date'){
+        row[field] = normalizeDateValue((typeof raw[ci] === 'number' && (!s[ci] || s[ci] === String(raw[ci]))) ? raw[ci] : s[ci]);
+      } else if(field === 'status'){
+        row[field] = mapStatusLabelToValue(s[ci]);
+      } else if(field === 'shipMode'){
+        row[field] = mapShipModeValue(s[ci]);
+      } else {
+        row[field] = String(s[ci] ?? '').trim();
+      }
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function normalizeQty(v){
+  // Strip trailing .0, commas, spaces — compare as integer-like string
+  if(v === null || v === undefined || v === '') return '';
+  const n = parseFloat(String(v).replace(/,/g,'').trim());
+  return isNaN(n) ? String(v).trim() : String(n);
+}
+
+function computePoMatches(incomingRows, scopeFields, customer){
+  const systemRows = state.data[customer] || [];
+
+  const poMap = {};
+  systemRows.forEach((r, idx) => {
+    const po = (r.po || '').trim();
+    if(!po) return;
+    if(!poMap[po]) poMap[po] = [];
+    poMap[po].push(idx);
+  });
+
+  const matched   = [];
+  const unmatched = [];
+  const needsManual = [];
+
+  incomingRows.forEach(inc => {
+    const idxList = poMap[inc.po];
+    if(!idxList){ unmatched.push(inc); return; }
+
+    const incQty = normalizeQty(inc.qty);
+    const incInv = (inc.inv || '').trim();
+    const incSo  = (inc.so  || '').trim();
+    const incDo  = (inc.do  || '').trim();
+
+    let targets = [...idxList];
+    let matchBy = 'PO only';
+
+    // Each tiebreaker: narrow targets, stop as soon as we reach 1
+    function tryNarrow(filterFn, label){
+      if(targets.length <= 1) return;
+      const t = targets.filter(filterFn);
+      if(t.length > 0 && t.length < targets.length){
+        targets = t;
+        matchBy = label;
+      }
+    }
+
+    // Priority order: SO first, then DO, then Qty, then INV
+    if(incSo) tryNarrow(
+      i => (systemRows[i].so||'').trim() === incSo,
+      'PO + SO'
+    );
+    if(incDo) tryNarrow(
+      i => (systemRows[i].do||'').trim() === incDo,
+      matchBy === 'PO + SO' ? 'PO + SO + DO' : 'PO + DO'
+    );
+    if(incQty) tryNarrow(
+      i => normalizeQty(systemRows[i].qty) === incQty,
+      matchBy !== 'PO only' ? matchBy + ' + Qty' : 'PO + Qty'
+    );
+    if(incInv) tryNarrow(
+      i => (systemRows[i].inv||'').trim() === incInv,
+      matchBy !== 'PO only' ? matchBy + ' + INV' : 'PO + INV'
+    );
+
+    if(targets.length > 1){
+      needsManual.push({
+        inc,
+        candidates: targets.map(i => ({ sysIdx: i, row: systemRows[i] })),
+        scopeFields,
+        matchBy,
+      });
+      return;
+    }
+
+    const sysIdx = targets[0];
+    const sys = systemRows[sysIdx];
+    const changes = {};
+    scopeFields.forEach(field => {
+      const newVal = inc[field];
+      if(newVal === undefined || newVal === '') return;
+      if((sys[field] || '') !== newVal) changes[field] = { old: sys[field] || '', new: newVal };
+    });
+    matched.push({ po: inc.po, sysIdx, changes, hasChanges: Object.keys(changes).length > 0, matchBy });
+  });
+
+  return { matched, unmatched, needsManual };
+}
+
+function openPoUpdateModal(incomingRows, customer){
+  const overlay = document.getElementById('updatePoModalOverlay');
+  pendingPoUpdate = { incomingRows, customer };
+
+  const presentFields = UPDATE_FIELDS.filter(({field}) =>
+    incomingRows.some(r => r[field] !== undefined && r[field] !== '')
+  );
+
+  let manualSelections = {};
+
+  function buildPreview(scopeFields){
+    const { matched, unmatched, needsManual } = computePoMatches(incomingRows, scopeFields, customer);
+    const updatable = matched.filter(m => m.hasChanges).length;
+    const same      = matched.filter(m => !m.hasChanges).length;
+
+    const matchByColor = {
+      'PO + Qty + INV': '#1E7A46', 'PO + Qty': '#1B6FAE',
+      'PO + INV': '#7B5CF0', 'PO + SO': '#20B2C4', 'PO only': '#9A6B00',
+    };
+
+    const autoRows = matched.slice(0, 50).map(m => {
+      const changesHtml = Object.entries(m.changes).map(([f]) => {
+        const label = UPDATE_FIELDS.find(x => x.field === f)?.label || f;
+        return `<span class="update-field-chip">${label}</span>`;
+      }).join('');
+      const changeDetail = Object.entries(m.changes).map(([f, v]) => {
+        const label = UPDATE_FIELDS.find(x => x.field === f)?.label || f;
+        return `<div><b>${label}:</b> <span class="update-cell-old">${escapeHtml(v.old||'—')}</span> <span class="update-cell-new">→ ${escapeHtml(v.new)}</span></div>`;
+      }).join('');
+      const mc = matchByColor[m.matchBy] || '#888';
+      const badge = `<span style="font-size:10px;font-weight:600;font-family:var(--mono);color:${mc};background:${mc}18;padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;">⊕ ${m.matchBy}</span>`;
+      const sys = state.data[customer][m.sysIdx];
+      const debugLine = `<div style="font-size:10px;color:#999;font-family:var(--mono);margin-top:2px;">แถว ${m.sysIdx+1} | Qty:${sys?.qty||'—'} SO:${sys?.so||'—'} DO:${sys?.do||'—'} INV:${sys?.inv||'—'}</div>`;
+      return `<tr class="${m.hasChanges ? 'row-matched' : ''}">
+        <td style="font-family:var(--mono);font-weight:600;">${escapeHtml(m.po)}</td>
+        <td>${badge}${debugLine}${m.hasChanges
+          ? `<div>${changesHtml}</div><div style="margin-top:4px;font-size:11px;">${changeDetail}</div>`
+          : `<span class="update-cell-same">ไม่มีการเปลี่ยนแปลง</span>`}</td>
+      </tr>`;
+    }).join('');
+
+    const unmatchedHtml = unmatched.map(r =>
+      `<tr class="row-unmatched"><td style="font-family:var(--mono)">${escapeHtml(r.po)}</td><td style="color:var(--muted);font-size:12px;">ไม่พบ PO นี้ในระบบ</td></tr>`
+    ).join('');
+    const more = matched.length > 50 ? `<tr><td colspan="2" style="padding:8px 10px;color:var(--muted);font-size:12px;">... และอีก ${matched.length-50} รายการ</td></tr>` : '';
+
+    let manualHtml = '';
+    if(needsManual.length > 0){
+      const items = needsManual.map((nm, niIdx) => {
+        const inc = nm.inc;
+        const incDesc = [
+          `PO: ${inc.po}`,
+          inc.qty ? `Qty: ${inc.qty} (norm: ${normalizeQty(inc.qty)})` : '',
+          inc.so  ? `SO: ${inc.so}`   : '',
+          inc.do  ? `DO: ${inc.do}`   : '',
+          inc.inv ? `INV: ${inc.inv}` : '',
+        ].filter(Boolean).join(' · ');
+
+        const opts = nm.candidates.map((cand) => {
+          const r = cand.row;
+          const desc = [
+            r.qty   ? `Qty: ${r.qty} (norm: ${normalizeQty(r.qty)})` : '—',
+            r.part  ? `Part: ${r.part}`     : '',
+            r.so    ? `SO: ${r.so}`         : '',
+            r.do    ? `DO: ${r.do}`         : '',
+            r.inv   ? `INV: ${r.inv}`       : '',
+            r.planDate ? `Plan: ${r.planDate}` : '',
+          ].filter(Boolean).join(' · ');
+
+          const sel = manualSelections[niIdx];
+          const checked = sel === cand.sysIdx ? 'checked' : '';
+          const pickedClass = sel === cand.sysIdx ? 'picked' : '';
+          return `
+            <div class="manual-resolve-option ${pickedClass}" data-ni="${niIdx}" data-sysidx="${cand.sysIdx}">
+              <input type="radio" name="manual_${niIdx}" value="${cand.sysIdx}" ${checked}>
+              <div class="manual-resolve-row-detail">
+                <span style="font-weight:700;color:var(--navy);">แถว ${cand.sysIdx + 1}</span> — ${escapeHtml(desc)}
+              </div>
+            </div>`;
+        }).join('');
+
+        const skipSel = manualSelections[niIdx] === -1 ? 'checked' : '';
+        const skipPicked = manualSelections[niIdx] === -1 ? 'picked' : '';
+        return `
+          <div class="manual-resolve-item">
+            <div class="manual-resolve-head">⚠ PO: ${escapeHtml(inc.po)} — พบ ${nm.candidates.length} แถวที่อาจตรงกัน</div>
+            <div class="manual-resolve-incoming">ข้อมูลจากไฟล์: ${escapeHtml(incDesc || '(ไม่มีข้อมูลเพิ่มเติม)')}</div>
+            ${opts}
+            <div class="manual-resolve-option ${skipPicked}" data-ni="${niIdx}" data-sysidx="-1">
+              <input type="radio" name="manual_${niIdx}" value="-1" ${skipSel}>
+              <div class="manual-resolve-row-detail" style="color:var(--muted);">⊘ ข้ามรายการนี้</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      manualHtml = `
+        <div class="manual-resolve-section">
+          <div class="manual-resolve-title">⚠ ต้องเลือกด้วยตัวเอง (${needsManual.length} รายการ)</div>
+          ${items}
+        </div>`;
+    }
+
+    return { updatable, same, unmatched: unmatched.length, needsManual: needsManual.length,
+      tableHtml: autoRows + unmatchedHtml + more, manualHtml, needsManualData: needsManual };
+  }
+
+  const scopeChecks = presentFields.map(({field,label}) =>
+    `<label class="update-scope-check">
+      <input type="checkbox" class="scope-chk" value="${field}" checked>
+      ${label}
+    </label>`
+  ).join('');
+
+  overlay.innerHTML = `
+    <div class="modal-overlay" id="poModalInner">
+      <div class="modal" style="max-width:640px;">
+        <div class="modal-head">
+          <div class="modal-icon" style="background:#E3F1FB;color:#1B6FAE;">🔄</div>
+          <div>
+            <h3>Update by PO — ${escapeHtml(customer)}</h3>
+            <p>อัปเดตข้อมูลโดยใช้เลข PO เป็น key จับคู่กับข้อมูลที่มีอยู่</p>
+          </div>
+        </div>
+        <div class="modal-body" style="gap:12px;">
+          <div class="update-scope-row">
+            <span class="update-scope-label">ฟิลด์ที่จะอัปเดต:</span>
+            <div class="update-scope-checks" id="scopeChecks">${scopeChecks}</div>
+          </div>
+          <div id="updateSummary" class="update-summary"></div>
+        </div>
+        <div class="modal-body-scroll" id="updatePreviewWrap">
+          <div id="manualResolveArea"></div>
+          <div class="update-table-wrap" style="margin-top:10px;">
+            <table class="update-table">
+              <thead><tr><th>PO</th><th>การเปลี่ยนแปลง</th></tr></thead>
+              <tbody id="updatePreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost btn-sm" id="poModalCancelBtn">ยกเลิก</button>
+          <button class="btn btn-accent btn-sm" id="poModalConfirmBtn">✓ อัปเดต</button>
+        </div>
+      </div>
+    </div>`;
+
+  overlay.style.display = 'block';
+
+  function refresh(){
+    const checked = [...overlay.querySelectorAll('.scope-chk:checked')].map(c => c.value);
+    manualSelections = {};
+    const preview = buildPreview(checked);
+    const { updatable, same, needsManual: nm, tableHtml, manualHtml } = preview;
+
+    document.getElementById('updateSummary').innerHTML = `
+      <span class="update-badge matched">✓ จับคู่ได้ ${updatable + same} รายการ</span>
+      <span class="update-badge updated">🔄 มีการเปลี่ยนแปลง ${updatable} รายการ</span>
+      <span class="update-badge skipped">— ไม่เปลี่ยน ${same} รายการ</span>
+      ${preview.unmatched ? `<span class="update-badge unmatched">✕ ไม่พบ PO ${preview.unmatched} รายการ</span>` : ''}
+      ${nm ? `<span class="update-badge" style="background:#FFF4D6;color:#9A6B00;">⚠ ต้องเลือกเอง ${nm} รายการ</span>` : ''}
+    `;
+    document.getElementById('updatePreviewBody').innerHTML = tableHtml;
+    document.getElementById('manualResolveArea').innerHTML = manualHtml;
+    document.getElementById('poModalConfirmBtn').disabled = updatable === 0 && nm === 0;
+
+    overlay.querySelectorAll('.manual-resolve-option').forEach(opt => {
+      const radio = opt.querySelector('input[type=radio]');
+      const niIdx = parseInt(opt.dataset.ni, 10);
+      const sysIdx = parseInt(opt.dataset.sysidx, 10);
+      const handler = () => {
+        manualSelections[niIdx] = sysIdx;
+        overlay.querySelectorAll(`.manual-resolve-option[data-ni="${niIdx}"]`).forEach(o => o.classList.remove('picked'));
+        opt.classList.add('picked');
+        document.getElementById('poModalConfirmBtn').disabled = false;
+      };
+      opt.addEventListener('click', () => { radio.checked = true; handler(); });
+      radio.addEventListener('change', handler);
+    });
+  }
+
+  overlay.querySelectorAll('.scope-chk').forEach(c => c.addEventListener('change', refresh));
+  refresh();
+
+  document.getElementById('poModalCancelBtn').addEventListener('click', closePoUpdateModal);
+  document.getElementById('poModalInner').addEventListener('click', e => {
+    if(e.target === e.currentTarget) closePoUpdateModal();
+  });
+  document.getElementById('poModalConfirmBtn').addEventListener('click', () => {
+    const checked = [...overlay.querySelectorAll('.scope-chk:checked')].map(c => c.value);
+    const { matched, needsManual } = computePoMatches(incomingRows, checked, customer);
+    let updCount = 0;
+    const systemRows = state.data[customer];
+
+    matched.forEach(m => {
+      if(!m.hasChanges) return;
+      Object.entries(m.changes).forEach(([field, v]) => { systemRows[m.sysIdx][field] = v.new; });
+      updCount++;
+    });
+
+    (needsManual || []).forEach((nm, niIdx) => {
+      const sysIdx = manualSelections[niIdx];
+      if(sysIdx === undefined || sysIdx === -1) return;
+      const sys = systemRows[sysIdx];
+      if(!sys) return;
+      nm.scopeFields.forEach(field => {
+        const newVal = nm.inc[field];
+        if(newVal === undefined || newVal === '') return;
+        if((sys[field]||'') !== newVal){ sys[field] = newVal; updCount++; }
+      });
+    });
+
+    state.data[customer] = sortRowsByPlanDate(systemRows);
+    saveState();
+    closePoUpdateModal();
+    state.active = customer;
+    renderAll();
+    showToast(`อัปเดตสำเร็จ: ${updCount} ฟิลด์ ใน "${customer}" (เรียงตาม Plan Date)`);
+  });
+}
+
+function closePoUpdateModal(){
+  document.getElementById('updatePoModalOverlay').style.display = 'none';
+  pendingPoUpdate = null;
+}
+
+
+async function handleUpdateByPoFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  e.target.value = '';
+  let wb;
+  try{
+    const buf = await file.arrayBuffer();
+    wb = XLSX.read(buf, {type:'array'});
+  }catch(err){
+    showToast('ไม่สามารถอ่านไฟล์ได้');
+    return;
+  }
+  // Read first non-guide sheet
+  const sheetName = wb.SheetNames.find(n => n !== 'คำแนะนำ') || wb.SheetNames[0];
+  if(!sheetName){ showToast('ไม่พบ Sheet ในไฟล์'); return; }
+  const rows = parsePoUpdateSheet(wb.Sheets[sheetName]);
+  if(rows.length === 0){ showToast('ไม่พบข้อมูล PO ในไฟล์นี้ (ต้องมีคอลัมน์ "PO")'); return; }
+
+  // Pick target customer — default to active
+  const customers = state.customers;
+  if(customers.length === 1){
+    openPoUpdateModal(rows, customers[0]);
+    return;
+  }
+  // Let user pick which customer to update against
+  const overlay = document.getElementById('updatePoModalOverlay');
+  const opts = customers.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+  overlay.innerHTML = `
+    <div class="modal-overlay" id="poPickInner">
+      <div class="modal" style="max-width:380px;">
+        <div class="modal-head">
+          <div class="modal-icon" style="background:#E3F1FB;color:#1B6FAE;">🔄</div>
+          <div><h3>Update by PO</h3><p>เลือกลูกค้าที่จะอัปเดต (พบ ${rows.length} PO ในไฟล์)</p></div>
+        </div>
+        <div class="modal-body">
+          <div class="import-field-group">
+            <label class="import-field-label">อัปเดตข้อมูลของลูกค้า:</label>
+            <select id="poCustomerSel" class="import-field-select">${opts}</select>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost btn-sm" id="poPickCancel">ยกเลิก</button>
+          <button class="btn btn-accent btn-sm" id="poPickNext">ถัดไป →</button>
+        </div>
+      </div>
+    </div>`;
+  overlay.style.display = 'block';
+  // Pre-select active customer
+  document.getElementById('poCustomerSel').value = state.active;
+  document.getElementById('poPickCancel').addEventListener('click', () => {
+    overlay.style.display = 'none';
+  });
+  document.getElementById('poPickNext').addEventListener('click', () => {
+    const cust = document.getElementById('poCustomerSel').value;
+    openPoUpdateModal(rows, cust);
+  });
+}
+
+document.getElementById('updateByPoFile').addEventListener('change', handleUpdateByPoFile);
+
+/* ---------- Import ---------- */
+const IMPORT_COLUMNS = ['part', 'mpn', 'po', 'qty', 'so', 'do', 'planDate', 'date', 'shipMode', 'forwarder', 'tracking', 'inv', 'status', 'note'];
+
+const HEADER_MAP = {
+  'part no.': 'part', 'part no': 'part', 'part': 'part', 'p/n': 'part', 'pn': 'part',
+  'mpn': 'mpn',
+  'เลข po': 'po', 'po': 'po', 'po no.': 'po', 'po no': 'po', 'po number': 'po',
+  "q'ty": 'qty', 'qty': 'qty', 'quantity': 'qty', 'จำนวน': 'qty',
+  'so': 'so', 'เลข so': 'so', 'so no.': 'so', 'so no': 'so',
+  'do': 'do', 'เลข do': 'do', 'do no.': 'do', 'do no': 'do',
+  'วันที่ plan จัดส่ง': 'planDate', 'plan date': 'planDate', 'planned date': 'planDate', 'plan': 'planDate',
+  'วันที่จัดส่ง': 'date', 'shipping date': 'date', 'ship date': 'date', 'date': 'date',
+  'ship mode': 'shipMode', 'shipmode': 'shipMode', 'mode': 'shipMode',
+  'forwarder': 'forwarder', 'fwd': 'forwarder',
+  'เลข tracking': 'tracking', 'tracking': 'tracking', 'tracking no.': 'tracking', 'tracking no': 'tracking', 'tracking number': 'tracking',
+  'inv': 'inv', 'invoice': 'inv', 'invoice no.': 'inv', 'invoice no': 'inv', 'inv no.': 'inv', 'inv no': 'inv',
+  'status': 'status', 'สถานะ': 'status',
+  'noted': 'note', 'note': 'note', 'notes': 'note', 'หมายเหตุ': 'note', 'remark': 'note', 'remarks': 'note',
+};
+
+function normHeader(h){
+  return String(h == null ? '' : h).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function pad2(n){ return String(n).padStart(2, '0'); }
+
+function normalizeDateValue(val){
+  if(val === null || val === undefined || val === '') return '';
+
+  // JS Date object (cellDates:true path — kept for safety)
+  if(val instanceof Date){
+    if(isNaN(val.getTime())) return '';
+    const y = val.getUTCFullYear();
+    const mo = val.getUTCMonth() + 1;
+    const d = val.getUTCDate();
+    if(y < 1900) return '';
+    return y + '-' + pad2(mo) + '-' + pad2(d);
+  }
+
+  // Raw Excel serial number — convert via XLSX
+  if(typeof val === 'number'){
+    if(val < 1) return '';
+    try{
+      const d = XLSX.SSF.parse_date_code(val);
+      if(!d || d.y < 1900) return '';
+      return d.y + '-' + pad2(d.m) + '-' + pad2(d.d);
+    }catch(e){ return ''; }
+  }
+
+  const s = String(val).trim();
+  if(!s) return '';
+
+  // Already YYYY-MM-DD
+  let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if(m) return `${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+
+  // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(m) return `${m[3]}-${pad2(m[1])}-${pad2(m[2])}`;
+
+  // Excel formatted string like "20 Jun 2026" or "Jun 20, 2026"
+  const parsed = Date.parse(s);
+  if(!isNaN(parsed)){
+    const d = new Date(parsed);
+    const y = d.getFullYear();
+    if(y >= 1900){
+      // Use local date parts since Date.parse gives local time for date-only strings
+      return y + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+    }
+  }
+
+  return s;
+}
+
+function parseSheetRows(ws){
+  // Read with raw:false to get formatted strings (avoids Excel serial/timezone issues),
+  // AND raw:true in a second pass to catch numeric serials in cells with no format.
+  // Strategy: use formatted string values, fallback to raw number for date cols.
+  const arrStr = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+  const arrRaw = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+  if(arrStr.length === 0) return [];
+  const colMap = buildHeaderColumnMap(arrStr[0]);
+  const rows = [];
+  for(let i = 1; i < arrStr.length; i++){
+    const rowStr = arrStr[i] || [];
+    const rowRaw = arrRaw[i] || [];
+    if(rowStr.every(c => c === '' || c === null || c === undefined)) continue;
+    const row = emptyRow();
+    IMPORT_COLUMNS.forEach(field => {
+      const colIdx = colMap[field];
+      if(colIdx === undefined) return;
+      if(field === 'planDate' || field === 'date'){
+        // Prefer formatted string; fall back to raw number for unformatted serial cells
+        const strVal = rowStr[colIdx];
+        const rawVal = rowRaw[colIdx];
+        const dateStr = (typeof rawVal === 'number' && (!strVal || strVal === String(rawVal)))
+          ? rawVal
+          : strVal;
+        row[field] = normalizeDateValue(dateStr);
+      } else if(field === 'status'){
+        row[field] = mapStatusLabelToValue(rowStr[colIdx]);
+      } else if(field === 'shipMode'){
+        row[field] = mapShipModeValue(rowStr[colIdx]);
+      } else {
+        const v = rowStr[colIdx];
+        row[field] = (v === null || v === undefined) ? '' : String(v).trim();
+      }
+    });
+    if(!rowIsEmpty(row)) rows.push(row);
+  }
+  return rows;
+}
+
+function mapStatusLabelToValue(val){
+  if(val === null || val === undefined) return '';
+  const s = String(val).trim();
+  if(!s) return '';
+  const found = STATUS_OPTIONS.find(o => o.label === s || o.value === s);
+  if(found) return found.value;
+  const lower = s.toLowerCase();
+  const byLower = STATUS_OPTIONS.find(o => o.value && o.value.toLowerCase() === lower);
+  if(byLower) return byLower.value;
+  return '';
+}
+
+function mapShipModeValue(val){
+  if(val === null || val === undefined) return '';
+  const s = String(val).trim();
+  if(!s) return '';
+  const lower = s.toLowerCase();
+  const found = SHIP_MODE_OPTIONS.find(o => o.value && o.value.toLowerCase() === lower);
+  return found ? found.value : s;
+}
+
+function buildHeaderColumnMap(headerRow){
+  const map = {};
+  let matched = 0;
+  headerRow.forEach((h, i) => {
+    const norm = normHeader(h);
+    if(HEADER_MAP[norm]){
+      map[HEADER_MAP[norm]] = i;
+      matched++;
+    }
+  });
+  if(matched === 0){
+    IMPORT_COLUMNS.forEach((field, i) => { map[field] = i; });
+  }
+  return map;
+}
+
+function rowIsEmpty(obj){
+  return IMPORT_COLUMNS.every(f => !obj[f]);
+}
+
+function emptyRow(){
+  return {tracking:'', date:'', part:'', forwarder:'', po:'', status:'', planDate:'', inv:'', mpn:'', so:'', do:'', shipMode:'', note:'', qty:''};
+}
+
+/* ---------- Import modal (2-step) ---------- */
+let pendingImport = null;   // { sheetResults, targetCustomer, targetMode }
+
+function openImportModal(sheetResults){
+  pendingImport = { sheetResults, targetCustomer: null, targetMode: 'add' };
+  const overlay = document.getElementById('importModalOverlay');
+
+  // Build customer options (existing + "new" for each sheet)
+  const existingOpts = state.customers.map(c =>
+    `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`
+  ).join('');
+
+  // Build sheet options from file
+  const sheetOpts = sheetResults.map((s, i) =>
+    `<option value="${i}">${escapeHtml(s.name)} (${s.rows.length} รายการ)</option>`
+  ).join('');
+
+  overlay.innerHTML = `
+    <div class="modal-overlay" id="modalOverlayInner">
+      <div class="modal" style="max-width:480px;">
+        <div class="modal-head">
+          <div class="modal-icon">📥</div>
+          <div>
+            <h3>นำเข้าข้อมูล Excel</h3>
+            <p>พบ ${sheetResults.length} sheet ในไฟล์ — เลือกปลายทางและ sheet ที่ต้องการ</p>
+          </div>
+        </div>
+        <div class="modal-body" style="gap:16px;">
+
+          <div class="import-field-group">
+            <label class="import-field-label">① เลือก Sheet จากไฟล์ที่อัปโหลด</label>
+            <select id="importSheetSel" class="import-field-select">
+              ${sheetOpts}
+            </select>
+            <div id="sheetPreview" class="import-preview"></div>
+          </div>
+
+          <div class="import-field-group">
+            <label class="import-field-label">② นำเข้าไปที่ลูกค้าคนไหน</label>
+            <div class="import-cust-tabs" id="importCustTabs">
+              <button class="import-cust-tab active" data-mode="existing">ลูกค้าที่มีอยู่</button>
+              <button class="import-cust-tab" data-mode="new">สร้างลูกค้าใหม่</button>
+            </div>
+
+            <div id="importCustExisting">
+              <select id="importCustSel" class="import-field-select">
+                ${existingOpts}
+              </select>
+              <div class="import-mode-row">
+                <span class="import-field-label" style="margin:0;">วิธีนำเข้า:</span>
+                <div class="import-mode-toggle">
+                  <input type="radio" name="importMode" id="modeAdd" value="add" checked>
+                  <label for="modeAdd">+ เพิ่มต่อท้าย</label>
+                  <input type="radio" name="importMode" id="modeReplace" value="replace">
+                  <label for="modeReplace">แทนที่ทั้งหมด</label>
+                </div>
+              </div>
+              <div id="existingInfo" class="import-info-box"></div>
+            </div>
+
+            <div id="importCustNew" style="display:none;">
+              <input type="text" id="importNewName" class="import-field-input"
+                placeholder="ระบุชื่อลูกค้าใหม่..." autocomplete="off">
+              <div id="newNameHint" class="import-info-box" style="display:none;"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost btn-sm" id="modalCancelBtn">ยกเลิก</button>
+          <button class="btn btn-accent btn-sm" id="modalConfirmBtn">✓ นำเข้าเลย</button>
+        </div>
+      </div>
+    </div>`;
+
+  overlay.style.display = 'block';
+
+  /* --- helpers --- */
+  let custMode = 'existing';   // 'existing' | 'new'
+
+  function getSelectedSheet(){
+    const idx = parseInt(document.getElementById('importSheetSel').value, 10);
+    return sheetResults[idx] || sheetResults[0];
+  }
+
+  function updateSheetPreview(){
+    const s = getSelectedSheet();
+    const el = document.getElementById('sheetPreview');
+    el.textContent = `"${s.name}" · ${s.rows.length} รายการ`;
+  }
+
+  function updateExistingInfo(){
+    if(custMode !== 'existing') return;
+    const sel = document.getElementById('importCustSel');
+    const name = sel.value;
+    const count = (state.data[name] || []).filter(rowHasData).length;
+    const mode = document.querySelector('input[name="importMode"]:checked')?.value || 'add';
+    const el = document.getElementById('existingInfo');
+    const sheet = getSelectedSheet();
+    if(mode === 'add'){
+      el.textContent = `ข้อมูลใน "${name}" ปัจจุบัน ${count} รายการ → จะเพิ่มอีก ${sheet.rows.length} รายการ (รวมเป็น ${count + sheet.rows.length} รายการ)`;
+      el.className = 'import-info-box info-add';
+    } else {
+      el.textContent = `⚠ จะลบ ${count} รายการเดิมใน "${name}" และแทนที่ด้วย ${sheet.rows.length} รายการใหม่`;
+      el.className = 'import-info-box info-replace';
+    }
+  }
+
+  function updateNewNameHint(){
+    if(custMode !== 'new') return;
+    const name = document.getElementById('importNewName').value.trim();
+    const hint = document.getElementById('newNameHint');
+    if(!name){ hint.style.display = 'none'; return; }
+    if(state.customers.includes(name)){
+      hint.textContent = `⚠ มีลูกค้าชื่อ "${name}" อยู่แล้ว — จะเพิ่มข้อมูลต่อท้ายแทน`;
+      hint.className = 'import-info-box info-replace';
+    } else {
+      hint.textContent = `✓ จะสร้างลูกค้าใหม่ชื่อ "${name}"`;
+      hint.className = 'import-info-box info-add';
+    }
+    hint.style.display = 'block';
+  }
+
+  /* --- wire events --- */
+  document.getElementById('importSheetSel').addEventListener('change', () => {
+    updateSheetPreview();
+    updateExistingInfo();
+  });
+
+  document.getElementById('importCustSel')?.addEventListener('change', updateExistingInfo);
+  document.querySelectorAll('input[name="importMode"]').forEach(r =>
+    r.addEventListener('change', updateExistingInfo));
+
+  document.getElementById('importNewName')?.addEventListener('input', updateNewNameHint);
+
+  overlay.querySelectorAll('.import-cust-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      custMode = btn.dataset.mode;
+      overlay.querySelectorAll('.import-cust-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('importCustExisting').style.display = custMode === 'existing' ? '' : 'none';
+      document.getElementById('importCustNew').style.display      = custMode === 'new'      ? '' : 'none';
+      if(custMode === 'existing') updateExistingInfo();
+    });
+  });
+
+  document.getElementById('modalCancelBtn').addEventListener('click', closeImportModal);
+  document.getElementById('modalOverlayInner').addEventListener('click', e => {
+    if(e.target === e.currentTarget) closeImportModal();
+  });
+  document.getElementById('modalConfirmBtn').addEventListener('click', () => doImport(custMode));
+
+  // init
+  updateSheetPreview();
+  updateExistingInfo();
+}
+
+function closeImportModal(){
+  document.getElementById('importModalOverlay').style.display = 'none';
+  pendingImport = null;
+}
+
+function sortRowsByPlanDate(rows){
+  return [...rows].sort((a, b) => {
+    const da = a.planDate || '';
+    const db = b.planDate || '';
+    if(!da && !db) return 0;
+    if(!da) return 1;   // blank → push to end
+    if(!db) return -1;
+    return da.localeCompare(db); // YYYY-MM-DD sorts lexicographically
+  });
+}
+
+function doImport(custMode){
+  const sheetResults = pendingImport?.sheetResults;
+  if(!sheetResults) return;
+
+  const sheet = sheetResults[parseInt(document.getElementById('importSheetSel').value, 10) || 0];
+  if(!sheet || sheet.rows.length === 0){ showToast('Sheet ที่เลือกไม่มีข้อมูล'); return; }
+
+  let targetName;
+  let mode = 'add';
+
+  if(custMode === 'existing'){
+    targetName = document.getElementById('importCustSel').value;
+    mode = document.querySelector('input[name="importMode"]:checked')?.value || 'add';
+    if(!targetName){ showToast('กรุณาเลือกลูกค้า'); return; }
+  } else {
+    targetName = document.getElementById('importNewName').value.trim();
+    if(!targetName){ showToast('กรุณาระบุชื่อลูกค้า'); return; }
+    if(state.customers.includes(targetName)){
+      mode = 'add';   // already exists → append
+    }
+  }
+
+  const exists = state.customers.includes(targetName);
+  if(!exists){
+    state.customers.push(targetName);
+    state.data[targetName] = sortRowsByPlanDate(sheet.rows);
+  } else if(mode === 'replace'){
+    state.data[targetName] = sortRowsByPlanDate(sheet.rows);
+  } else {
+    const cleaned = (state.data[targetName] || []).filter(rowHasData);
+    state.data[targetName] = sortRowsByPlanDate(cleaned.concat(sheet.rows));
+  }
+
+  state.active = targetName;
+  saveState();
+  closeImportModal();
+  renderAll();
+  showToast(`นำเข้าสำเร็จ: "${targetName}" · ${sheet.rows.length} รายการ (เรียงตาม Plan Date)`);
+}
+
+async function handleImportFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  e.target.value = '';
+
+  let wb;
+  try{
+    const buf = await file.arrayBuffer();
+    wb = XLSX.read(buf, {type:'array'});
+  }catch(err){
+    showToast('ไม่สามารถอ่านไฟล์นี้ได้ กรุณาตรวจสอบรูปแบบไฟล์');
+    return;
+  }
+
+  // Parse all sheets (excluding guide sheet)
+  const sheetResults = [];
+  wb.SheetNames
+    .filter(n => n !== 'คำแนะนำ')
+    .forEach(sheetName => {
+      const ws = wb.Sheets[sheetName];
+      const rows = parseSheetRows(ws);
+      sheetResults.push({ name: sheetName.trim() || sheetName, rows });
+    });
+
+  if(sheetResults.length === 0){
+    showToast('ไม่พบ Sheet ในไฟล์นี้');
+    return;
+  }
+
+  openImportModal(sheetResults);
+}
+
+document.getElementById('importFile').addEventListener('change', handleImportFile);
+
+/* ---------- Template ---------- */
+function downloadTemplate(){
+  const wb = XLSX.utils.book_new();
+
+  const header = ['Part No.', 'MPN', 'เลข PO', "Q'ty", 'SO', 'DO', 'วันที่ Plan จัดส่ง', 'วันที่จัดส่ง', 'Ship Mode', 'Forwarder', 'เลข Tracking', 'INV', 'Status', 'Noted'];
+  // Use plain text strings for dates — avoids all timezone/serial offset problems on import
+  const sample = [
+    ['PN-0042', 'MPN-1234', 'PO-2026-001', 100, 'SO-2026-001', '',           '2026-06-20', '',           'Air', 'DHL',   '',              '',              'รอการจัดส่ง', ''],
+    ['PN-0043', 'MPN-5678', 'PO-2026-002', 50,  'SO-2026-002', 'DO-2026-001','2026-06-18', '2026-06-18', 'Sea', 'Kerry', 'TH123456789', 'INV-2026-001',  'ส่งแล้ว',     'ลูกค้าขอเร่งของ'],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([header, ...sample]);
+  ws['!cols'] = COLUMN_WIDTHS_EXPORT;
+  XLSX.utils.book_append_sheet(wb, ws, 'ลูกค้า A');
+
+  const guideRows = [
+    ['วิธีใช้ไฟล์ Template นี้'],
+    [''],
+    ['1. ชื่อ Sheet (แท็บด้านล่าง) = ชื่อลูกค้า/หน้าที่จะถูกสร้างหรืออัปเดตในระบบ'],
+    ['2. เพิ่ม Sheet ใหม่ได้หลายแผ่นเพื่อนำเข้าหลายลูกค้าในไฟล์เดียว'],
+    ['3. หัวตารางต้องอยู่แถวแรก ตามคอลัมน์: ' + header.join(' | ')],
+    ['4. รูปแบบวันที่ที่แนะนำ: พิมพ์เป็นข้อความ YYYY-MM-DD (เช่น 2026-06-20) เพื่อความถูกต้อง 100%'],
+    ['   หรือใช้ฟอร์แมต DD/MM/YYYY ก็ได้ ระบบจะแปลงให้อัตโนมัติ'],
+    ['   ⚠ หากกรอกเป็น Date ใน Excel — ให้ตั้ง cell format เป็น YYYY-MM-DD ก่อน เพื่อป้องกัน timezone shift'],
+    ['5. ค่า Status ที่ระบบรองรับ: ' + STATUS_OPTIONS.filter(o => o.value).map(o => o.label).join(', ')],
+    ['6. ค่า Ship Mode ที่ระบบรองรับ: ' + SHIP_MODE_OPTIONS.filter(o => o.value).map(o => o.label).join(', ')],
+    ['7. นำไฟล์นี้กลับมา Import ที่ระบบผ่านปุ่ม "📥 Import Excel"'],
+    ['8. ระบบจะถามว่าต้องการ "เพิ่มต่อ" หรือ "แทนที่" ข้อมูลเดิม แยกเป็นรายลูกค้า'],
+  ];
+  const wsGuide = XLSX.utils.aoa_to_sheet(guideRows);
+  wsGuide['!cols'] = [{wch: 100}];
+  XLSX.utils.book_append_sheet(wb, wsGuide, 'คำแนะนำ');
+
+  XLSX.writeFile(wb, 'shipment-import-template.xlsx');
+  showToast('ดาวน์โหลด Template สำเร็จ');
+}
+
+document.getElementById('templateBtn').addEventListener('click', downloadTemplate);
+document.getElementById('trashBtn').addEventListener('click', openTrashPanel);
+document.getElementById('undoBtn').addEventListener('click', performUndo);
+document.addEventListener('keydown', e => {
+  const isUndoKey = (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z';
+  if(isUndoKey){
+    e.preventDefault();
+    performUndo();
+  }
+});
+document.getElementById('trashCloseBtn').addEventListener('click', closeTrashPanel);
+document.getElementById('trashOverlay').addEventListener('click', closeTrashPanel);
+
+/* ============================================================
+   📦 ARCHIVE — move shipped rows out of the active sheet
+   ============================================================ */
+const ARCHIVE_KEY = 'shipmentArchiveData';
+
+function loadArchive(){
+  try{
+    const raw = localStorage.getItem(ARCHIVE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return [];  // flat array of { customer, archivedAt, row }
+}
+function saveArchive(arr){ localStorage.setItem(ARCHIVE_KEY, JSON.stringify(arr)); }
+
+function archiveShippedRows(customer){
+  const rows = state.data[customer] || [];
+  const toArchive = rows.filter(r => r.status === 'shipped');
+  if(toArchive.length === 0){
+    showToast('ไม่มีรายการที่มีสถานะ "ส่งแล้ว" ในหน้านี้');
+    return;
+  }
+  if(!confirm(`ย้าย ${toArchive.length} รายการที่ "ส่งแล้ว" ของ "${customer}" ไป Archive?\n\nสามารถกู้คืนได้จากหน้า Archive`)) return;
+  const archive = loadArchive();
+  const now = new Date().toISOString();
+  toArchive.forEach(r => archive.push({ customer, archivedAt: now, row: { ...r } }));
+  saveArchive(archive);
+  state.data[customer] = rows.filter(r => r.status !== 'shipped');
+  saveState();
+  renderAll();
+  showToast(`ย้าย ${toArchive.length} รายการไป Archive แล้ว`);
+}
+
+function openArchivePanel(){
+  renderArchivePanel();
+  document.getElementById('archivePanel').classList.add('open');
+  document.getElementById('archiveOverlay').classList.add('open');
+}
+function closeArchivePanel(){
+  document.getElementById('archivePanel').classList.remove('open');
+  document.getElementById('archiveOverlay').classList.remove('open');
+}
+
+function renderArchivePanel(filterCust = '', search = ''){
+  const archive = loadArchive();
+  const customers = [...new Set(archive.map(a => a.customer))].sort();
+
+  // Controls
+  const custOpts = ['<option value="">All Customers</option>',
+    ...customers.map(c => `<option value="${escapeAttr(c)}" ${c===filterCust?'selected':''}>${escapeHtml(c)}</option>`)
+  ].join('');
+  document.getElementById('archiveControls').innerHTML = `
+    <select id="archiveCustFilter">${custOpts}</select>
+    <input type="text" id="archiveSearch" placeholder="🔍 ค้นหา Part No., PO..." value="${escapeAttr(search)}" style="flex:1;min-width:0;">
+    <span class="archive-stat" id="archiveStat"></span>`;
+
+  document.getElementById('archiveCustFilter').addEventListener('change', e => {
+    renderArchivePanel(e.target.value, document.getElementById('archiveSearch').value);
+  });
+  document.getElementById('archiveSearch').addEventListener('input', e => {
+    renderArchivePanel(document.getElementById('archiveCustFilter').value, e.target.value);
+  });
+
+  // Filter
+  const sq = search.toLowerCase();
+  const filtered = archive.filter((a, idx) => {
+    a._idx = idx;
+    if(filterCust && a.customer !== filterCust) return false;
+    if(sq){
+      const r = a.row;
+      return [r.part,r.mpn,r.po,r.so,r.tracking,r.inv,r.forwarder,r.note].some(v => (v||'').toLowerCase().includes(sq));
+    }
+    return true;
+  });
+
+  const list = document.getElementById('archiveList');
+  document.getElementById('archiveStat').textContent = `${filtered.length} รายการ`;
+
+  if(filtered.length === 0){
+    list.innerHTML = `<div class="archive-empty">${archive.length === 0 ? '📦 ยังไม่มีข้อมูลใน Archive' : 'ไม่พบรายการที่ตรงกัน'}</div>`;
+    return;
+  }
+
+  // Group by customer + archivedAt date
+  list.innerHTML = filtered.map((a, i) => {
+    const r = a.row;
+    const arDate = new Date(a.archivedAt);
+    const arStamp = arDate.getDate() + '/' + pad2(arDate.getMonth()+1) + '/' + (arDate.getFullYear()+543);
+    const metaParts = [
+      a.customer,
+      r.po ? 'PO: '+r.po : '',
+      r.planDate ? 'Plan: '+r.planDate : '',
+      r.date ? 'Shipped: '+r.date : '',
+      r.qty ? 'Qty: '+r.qty : '',
+      r.forwarder || '',
+      r.tracking ? 'TRK: '+r.tracking : '',
+    ].filter(Boolean);
+    return `
+      <div class="archive-item">
+        <div class="archive-item-head">
+          <div>
+            <div class="archive-item-pn">${escapeHtml(r.mpn || r.part || '—')}${r.mpn && r.part ? ` <span style="font-weight:400;color:var(--muted);font-size:11px;">(${escapeHtml(r.part)})</span>` : ''}</div>
+          </div>
+          <button class="archive-restore" data-orig-idx="${a._idx}">↩ Restore</button>
+        </div>
+        <div class="archive-item-meta">
+          ${metaParts.map((m,j) => `<span>${escapeHtml(m)}</span>`).join('')}
+        </div>
+        <div style="font-family:var(--mono);font-size:10.5px;color:#C4CADA;">Archived ${arStamp}</div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.archive-restore').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const origIdx = parseInt(btn.dataset.origIdx, 10);
+      restoreFromArchive(origIdx);
+    });
+  });
+}
+
+function restoreFromArchive(origIdx){
+  const archive = loadArchive();
+  const item = archive[origIdx];
+  if(!item) return;
+  // Restore row to its customer sheet
+  if(!state.customers.includes(item.customer)){
+    state.customers.push(item.customer);
+    state.data[item.customer] = [];
+  }
+  state.data[item.customer].push({ ...item.row });
+  archive.splice(origIdx, 1);
+  saveArchive(archive);
+  saveState();
+  renderAll();
+  renderArchivePanel(
+    document.getElementById('archiveCustFilter')?.value || '',
+    document.getElementById('archiveSearch')?.value || ''
+  );
+  showToast(`กู้คืน ${item.row.part || item.row.mpn || 'รายการ'} ไปที่ "${item.customer}" แล้ว`);
+}
+
+function exportArchive(){
+  const archive = loadArchive();
+  if(archive.length === 0){ showToast('ไม่มีข้อมูลใน Archive'); return; }
+  const header = ['Customer', 'Archived Date', 'Part No.', 'MPN', 'PO', "Q'ty", 'SO', 'DO',
+    'Plan Date', 'Ship Date', 'Ship Mode', 'Forwarder', 'Tracking', 'INV', 'Status', 'Noted'];
+  const rows = archive.map(a => {
+    const r = a.row;
+    return [a.customer, a.archivedAt.slice(0,10), r.part||'', r.mpn||'', r.po||'', r.qty||'',
+      r.so||'', r.do||'', r.planDate||'', r.date||'', r.shipMode||'', r.forwarder||'',
+      r.tracking||'', r.inv||'', statusMeta(r.status).label.replace('— เลือกสถานะ —',''), r.note||''];
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  ws['!cols'] = header.map(() => ({ wch: 18 }));
+  XLSX.utils.book_append_sheet(wb, ws, 'Archive');
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `shipment-archive-${stamp}.xlsx`);
+  showToast('Export Archive สำเร็จ');
+}
+
+document.getElementById('archiveBtn').addEventListener('click', openArchivePanel);
+document.getElementById('archiveCloseBtn').addEventListener('click', closeArchivePanel);
+document.getElementById('archiveOverlay').addEventListener('click', closeArchivePanel);
+document.getElementById('archiveExportBtn').addEventListener('click', exportArchive);
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
+}
+
+/* ---------- Header date stamp ---------- */
+(function(){
+  const d = new Date();
+  const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('dateStamp').textContent =
+    'TRACK & SHIP · ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+})();
+
+/* ============================================================
+   🔍 Global PO / Part / Tracking search across all customers
+   ============================================================ */
+(function(){
+  const SEARCH_FIELDS = ['po','part','mpn','tracking','inv','so','do'];
+
+  function highlight(text, query){
+    if(!query || !text) return escapeHtml(text||'');
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if(idx === -1) return escapeHtml(text);
+    return escapeHtml(text.slice(0,idx))
+      + `<mark class="hl">${escapeHtml(text.slice(idx, idx+query.length))}</mark>`
+      + escapeHtml(text.slice(idx+query.length));
+  }
+
+  function searchAll(query){
+    const q = query.trim().toLowerCase();
+    if(!q) return [];
+    const results = [];
+    state.customers.forEach(customer => {
+      (state.data[customer] || []).forEach((r, idx) => {
+        const match = SEARCH_FIELDS.some(f => (r[f]||'').toLowerCase().includes(q));
+        if(!match) return;
+        results.push({ customer, idx, r });
+        if(results.length >= 50) return;
+      });
+    });
+    return results;
+  }
+
+  function renderResults(results, query){
+    const box = document.getElementById('globalSearchResults');
+    if(results.length === 0){
+      box.innerHTML = `<div class="global-search-empty">ไม่พบผลลัพธ์สำหรับ "${escapeHtml(query)}"</div>`;
+      box.style.display = 'block';
+      return;
+    }
+    box.innerHTML = results.map(({customer, idx, r}) => {
+      const po      = r.po      ? highlight(r.po,      query) : '—';
+      const part    = r.part    ? highlight(r.part,    query) : '';
+      const mpn     = r.mpn     ? highlight(r.mpn,     query) : '';
+      const trk     = r.tracking? highlight(r.tracking,query) : '';
+      const meta = [
+        part ? `Part: ${part}` : '',
+        mpn  ? `MPN: ${mpn}`   : '',
+        r.planDate ? `Plan: ${r.planDate}` : '',
+        trk  ? `TRK: ${trk}`  : '',
+        r.qty ? `Qty: ${r.qty}` : '',
+      ].filter(Boolean).join(' · ');
+      return `<div class="global-search-item" data-customer="${escapeAttr(customer)}" data-idx="${idx}">
+        <div class="global-search-item-icon">📋</div>
+        <div class="global-search-item-body">
+          <div class="global-search-item-po">PO: ${po}</div>
+          <div class="global-search-item-meta">${meta||'&nbsp;'}</div>
+        </div>
+        <div class="global-search-item-cust">${escapeHtml(customer)}</div>
+      </div>`;
+    }).join('') + (results.length >= 50 ? `<div class="global-search-empty" style="border-top:1px solid var(--border);">แสดง 50 ผลลัพธ์แรก</div>` : '');
+    box.style.display = 'block';
+
+    box.querySelectorAll('.global-search-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const customer = el.dataset.customer;
+        const rowIdx   = parseInt(el.dataset.idx, 10);
+        document.getElementById('globalPoSearch').value = '';
+        box.style.display = 'none';
+        if(state.active !== customer){
+          state.active = customer;
+          filterState = {};
+          colHiddenValues = {};
+          saveState();
+          renderAll();
+        }
+        setTimeout(() => {
+          const tbody = document.getElementById('tbody');
+          if(!tbody) return;
+          const tr = tbody.querySelector(`tr[data-row-idx="${rowIdx}"]`);
+          if(tr){
+            tr.scrollIntoView({ behavior:'smooth', block:'center' });
+            tr.classList.remove('alert-highlight');
+            void tr.offsetWidth;
+            tr.classList.add('alert-highlight');
+            setTimeout(() => tr.classList.remove('alert-highlight'), 2200);
+          }
+        }, 80);
+      });
+    });
+  }
+
+  let searchTimer;
+  const input = document.getElementById('globalPoSearch');
+  const box   = document.getElementById('globalSearchResults');
+
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = input.value.trim();
+    if(!q){ box.style.display = 'none'; return; }
+    searchTimer = setTimeout(() => {
+      renderResults(searchAll(q), q);
+    }, 180);
+  });
+
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){ box.style.display = 'none'; input.value = ''; }
+  });
+
+  document.addEventListener('click', e => {
+    if(!input.contains(e.target) && !box.contains(e.target)){
+      box.style.display = 'none';
+    }
+  });
+})();
+
+renderAll();
+updateUndoBtn();
+</script>
+
+</body>
+</html>
